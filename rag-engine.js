@@ -2,8 +2,8 @@ import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { TextLoader } from "langchain/document_loaders/fs/text";
-// Importa o novo divisor de texto especialista em Markdown
-import { MarkdownHeaderTextSplitter } from "langchain/text_splitter";
+// CORREÇÃO: O caminho da importação foi ajustado para o local correto.
+import { MarkdownHeaderTextSplitter } from "langchain/text_splitters/markdown";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
@@ -27,25 +27,20 @@ export async function initializeRAGEngine() {
       return { getRelevantDocuments: () => Promise.resolve([]) };
     }
 
-    // --- NOVA ESTRATÉGIA DE DIVISÃO DE TEXTO ---
-    // Define a estrutura de títulos que o divisor deve respeitar
+    // --- ESTRATÉGIA DE DIVISÃO DE TEXTO ESPECIALISTA EM MARKDOWN ---
     const headersToSplitOn = [
         ["#", "Header1"],
         ["##", "Header2"],
         ["###", "Header3"],
     ];
 
-    // Cria uma instância do divisor de Markdown
     const markdownSplitter = new MarkdownHeaderTextSplitter({
         headersToSplitOn: headersToSplitOn,
     });
 
-    // Divide os documentos usando a nova estratégia
     const splits = await markdownSplitter.splitDocuments(docs);
     console.log(`[RAG Engine] Documentos divididos em ${splits.length} chunks usando a estrutura do Markdown.`);
-    // --- FIM DA NOVA ESTRATÉGIA ---
-
-
+    
     const embeddings = new GoogleGenerativeAIEmbeddings({
         apiKey: process.env.GEMINI_API_KEY,
         modelName: "text-embedding-004"
@@ -55,7 +50,7 @@ export async function initializeRAGEngine() {
 
     console.log(`[RAG Engine] Indexação concluída. ${splits.length} pedaços de texto carregados na memória.`);
 
-    return vectorStore.asRetriever({ k: 5 }); // Aumentei para 5 chunks para dar mais contexto
+    return vectorStore.asRetriever({ k: 5 });
 
   } catch (error) {
     console.error('[RAG Engine] Falha ao inicializar a base de conhecimento:', error);
