@@ -22,7 +22,7 @@ export async function createVectorStore() {
 
     if (docs.length === 0) {
       console.log('[Vector Store] Nenhum documento encontrado.');
-      return null;
+      return await MemoryVectorStore.fromTexts(["base de conhecimento vazia"], {}, new GoogleGenerativeAIEmbeddings({ apiKey: process.env.GEMINI_API_KEY }));
     }
 
     const textSplitter = new RecursiveCharacterTextSplitter({
@@ -44,6 +44,7 @@ export async function createVectorStore() {
 
   } catch (error) {
     console.error('[Vector Store] Falha ao inicializar a base de conhecimento:', error);
-    return null;
+    // Em caso de erro, retorna uma base vazia para não travar o servidor
+    return await MemoryVectorStore.fromTexts(["falha ao carregar base de conhecimento"], {}, new GoogleGenerativeAIEmbeddings({ apiKey: process.env.GEMINI_API_KEY }));
   }
 }
