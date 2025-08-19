@@ -2,7 +2,7 @@ import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { TextLoader } from "langchain/document_loaders/fs/text";
-// CORREÇÃO DEFINITIVA: Importando do pacote específico @langchain/textsplitters
+// CORREÇÃO FINAL E DEFINITIVA: Importando do pacote correto que instalamos.
 import { MarkdownHeaderTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
