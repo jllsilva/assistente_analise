@@ -2,15 +2,14 @@ import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { TextLoader } from "langchain/document_loaders/fs/text";
-// Voltando a usar o splitter padrão e estável que sabemos que funciona.
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
-// Esta função irá inicializar todo o nosso motor de busca
-export async function initializeRAGEngine() {
+// Esta função agora cria e retorna a base de vetores (vector store)
+export async function createVectorStore() {
   try {
-    console.log('[RAG Engine] Iniciando indexação da base de conhecimento...');
+    console.log('[Vector Store] Iniciando indexação da base de conhecimento...');
     
     const loader = new DirectoryLoader(
       './knowledge_base',
@@ -23,18 +22,17 @@ export async function initializeRAGEngine() {
     const docs = await loader.load();
 
     if (docs.length === 0) {
-      console.log('[RAG Engine] Nenhum documento encontrado. O servidor continuará sem conhecimento de RAG.');
-      return { getRelevantDocuments: () => Promise.resolve([]) };
+      console.log('[Vector Store] Nenhum documento encontrado.');
+      return null;
     }
 
-    // Usando o RecursiveCharacterTextSplitter que é compatível e estável
     const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1500, // Tamanho de cada "pedaço" de texto
-      chunkOverlap: 200, // Sobreposição para não perder o contexto
+      chunkSize: 1500,
+      chunkOverlap: 200,
     });
 
     const splits = await textSplitter.splitDocuments(docs);
-    console.log(`[RAG Engine] Documentos divididos em ${splits.length} chunks.`);
+    console.log(`[Vector Store] Documentos divididos em ${splits.length} chunks.`);
     
     const embeddings = new GoogleGenerativeAIEmbeddings({
         apiKey: process.env.GEMINI_API_KEY,
@@ -42,14 +40,11 @@ export async function initializeRAGEngine() {
     });
 
     const vectorStore = await MemoryVectorStore.fromDocuments(splits, embeddings);
+    console.log(`[Vector Store] Indexação concluída.`);
+    return vectorStore;
 
-    console.log(`[RAG Engine] Indexação concluída. ${splits.length} pedaços de texto carregados na memória.`);
-
-    return vectorStore.asRetriever({ k: 5 });
-
-  } catch (error)
- {
-    console.error('[RAG Engine] Falha ao inicializar a base de conhecimento:', error);
-    return { getRelevantDocuments: () => Promise.resolve([]) };
+  } catch (error) {
+    console.error('[Vector Store] Falha ao inicializar a base de conhecimento:', error);
+    return null;
   }
 }
