@@ -2,8 +2,8 @@ import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { TextLoader } from "langchain/document_loaders/fs/text";
-// CORREÇÃO FINAL E DEFINITIVA: Importando do pacote correto que instalamos.
-import { MarkdownHeaderTextSplitter } from "@langchain/textsplitters";
+// Voltando a usar o splitter padrão e estável que sabemos que funciona.
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
@@ -27,18 +27,14 @@ export async function initializeRAGEngine() {
       return { getRelevantDocuments: () => Promise.resolve([]) };
     }
 
-    const headersToSplitOn = [
-        ["#", "Header1"],
-        ["##", "Header2"],
-        ["###", "Header3"],
-    ];
-
-    const markdownSplitter = new MarkdownHeaderTextSplitter({
-        headersToSplitOn: headersToSplitOn,
+    // Usando o RecursiveCharacterTextSplitter que é compatível e estável
+    const textSplitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 1500, // Tamanho de cada "pedaço" de texto
+      chunkOverlap: 200, // Sobreposição para não perder o contexto
     });
 
-    const splits = await markdownSplitter.splitDocuments(docs);
-    console.log(`[RAG Engine] Documentos divididos em ${splits.length} chunks usando a estrutura do Markdown.`);
+    const splits = await textSplitter.splitDocuments(docs);
+    console.log(`[RAG Engine] Documentos divididos em ${splits.length} chunks.`);
     
     const embeddings = new GoogleGenerativeAIEmbeddings({
         apiKey: process.env.GEMINI_API_KEY,
@@ -51,7 +47,8 @@ export async function initializeRAGEngine() {
 
     return vectorStore.asRetriever({ k: 5 });
 
-  } catch (error) {
+  } catch (error)
+ {
     console.error('[RAG Engine] Falha ao inicializar a base de conhecimento:', error);
     return { getRelevantDocuments: () => Promise.resolve([]) };
   }
