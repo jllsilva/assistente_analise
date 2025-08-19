@@ -5,8 +5,6 @@ import path from 'path';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import { createVectorStore } from './rag-engine.js';
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { MultiQueryRetriever } from "langchain/retrievers/multi_query";
 
 dotenv.config();
 
@@ -33,15 +31,14 @@ const SYSTEM_PROMPT = `
 ---
 ## PROCESSO DE RACIOCÍNIO (SEMPRE SIGA ESTES PASSOS ANTES DE RESPONDER)
 1.  **Decompor a Pergunta:** Analise a pergunta do usuário e extraia as palavras-chave e os critérios principais (ex: 'F-6', 'menos de 750m²', 'hospital', 'extintores').
-2.  **Mapear com o Contexto (RAG):** Examine o contexto da base de conhecimento fornecido. Procure por títulos, tabelas ou seções que correspondam diretamente a essas palavras-chave.
-3.  **Priorizar o Contexto Correto:** Se o contexto recuperado contiver informações conflitantes que dependem de um critério numérico (como área ou altura), você **DEVE OBRIGATORIAMENTE** usar a informação da seção que corresponde explicitamente à pergunta do usuário. Ignore os trechos que não se aplicam.
+2.  **Mapear com o Contexto (RAG):** Examine o contexto da base de conhecimento fornecido. A fonte mais relevante provavelmente estará em um arquivo cujo nome corresponde às palavras-chave.
+3.  **Priorizar o Contexto Correto:** Se o contexto recuperado contiver informações conflitantes que dependem de um critério numérico (como área ou altura), você **DEVE OBRIGATORIAMENTE** usar a informação da seção que corresponde explicitamente à pergunta do usuário.
 4.  **Dupla Checagem da Extração:** Antes de formular a resposta, revise sua própria extração de dados. **VERIFIQUE DUAS VEZES** se a informação pertence inequivocamente à coluna e linha corretas.
 5.  **Sintetizar a Resposta:** Com base no trecho priorizado e verificado, construa sua resposta.
-6.  **Citar Fontes:** Para cada informação, cite a fonte específica de onde ela foi retirada.
+6.  **Citar Fontes:** Para cada informação, cite a fonte. O nome do arquivo (ex: IT_01_Tabela_5_Area_Menor_750.md) é uma excelente fonte.
 7.  **Fallback (Plano B):** **Apenas se**, após seguir rigorosamente os passos acima, a informação realmente não estiver presente, utilize a resposta padrão.
 ---
 ## REGRAS DE OPERAÇÃO
-- **OBRIGAÇÃO DE CITAR FONTES:** TODA AFIRMAÇÃO TÉCNICA DEVE SER ACOMPANHADA DE SUA FONTE.
 - **Mensagem Inicial:** Ao receber uma conversa vazia, sua ÚNICA resposta deve ser: "Bom dia, Analista. Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
 */
 `;
@@ -51,10 +48,6 @@ let vectorStore;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/health', (req, res) => {
-    res.status(200).send('Servidor do Assistente da DAT está ativo e saudável.');
-});
 
 app.post('/api/generate', async (req, res) => {
   const { history } = req.body;
@@ -66,36 +59,27 @@ app.post('/api/generate', async (req, res) => {
     const isInitialMessage = history.length === 0;
     let context = "";
 
-    if (!isInitialMessage) {
+    if (!isInitialMessage && vectorStore) {
         const textQuery = history[history.length - 1]?.parts[0]?.text || '';
-        if (textQuery && vectorStore) {
-            const llm = new ChatGoogleGenerativeAI({ apiKey: API_KEY, modelName: API_MODEL, temperature: 0 });
-            const retriever = MultiQueryRetriever.fromLLM({
-                llm: llm,
-                retriever: vectorStore.asRetriever(),
-                verbose: true,
-            });
-            const contextDocs = await retriever.getRelevantDocuments(textQuery);
-            context = contextDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
-        }
-
-        // Adiciona o contexto do RAG à última mensagem do usuário
-        const lastMessage = history[history.length - 1];
-        lastMessage.parts.unshift({ text: `CONTEXTO DA BASE DE CONHECIMENTO:\n${context}\n---\nPERGUNTA DO ANALISTA:` });
+        const retriever = vectorStore.asRetriever();
+        const contextDocs = await retriever.getRelevantDocuments(textQuery);
+        context = contextDocs.map(doc => `Nome do Arquivo Fonte: ${doc.metadata.source?.split('/').pop() || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
     }
 
     const body = {
-      contents: history, // Apenas o histórico da conversa
-      systemInstruction: { // As instruções do sistema vão separadas
-        parts: [{ text: SYSTEM_PROMPT }]
-      }
+      contents: history,
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
     };
+
+    if (!isInitialMessage) {
+        body.contents[body.contents.length - 1].parts.unshift({ text: `\nCONTEXTO DA BASE DE CONHECIMENTO:\n${context}\n---\n` });
+    }
 
     const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(45000)
+        signal: AbortSignal.timeout(30000)
     });
 
     if (!apiResponse.ok) {
