@@ -14,8 +14,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.GEMINI_API_KEY;
-// CORREÇÃO DEFINITIVA: Usando um modelo estável e reconhecido pela API do Google.
-const API_MODEL = 'gemini-1.5-pro-latest';
+const API_MODEL = 'gemini-2.5-flash-preview-05-20'; // Utilizando o modelo que você confirmou que funciona
 
 if (!API_KEY) {
   console.error('[ERRO CRÍTICO] Variável de ambiente GEMINI_API_KEY não definida.');
@@ -110,7 +109,8 @@ DÚVIDA DO ANALISTA:
         contents: fullHistory,
     };
 
-    const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
+    // CORREÇÃO FINAL: Usando a versão "v1beta" da API, que é a correta para a sua chave.
+    const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
