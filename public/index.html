@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Assistente de Perícias de Incêndio</title>
+  <title>Assistente Técnico DAT - CBMAL</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -14,10 +14,10 @@
     <header class="app-header">
         <div class="brand">
             <img src="/CBMAL.png" alt="Brasão CBMAL" class="brand-logo">
-            <h1 class="brand-title">Assistente de Perícias</h1>
+            <h1 class="brand-title">Assistente Técnico DAT</h1>
         </div>
         <div class="header-actions">
-            <button id="new-chat-btn" class="action-button primary">+ Nova Perícia</button>
+            <button id="new-chat-btn" class="action-button primary">+ Nova Consulta</button>
         </div>
     </header>
 
@@ -26,18 +26,14 @@
     <footer class="app-footer">
         <div id="previews-area" class="previews-area"></div>
         <div class="input-area">
-            <input type="file" id="file-input" class="hidden-input" accept="image/*" multiple>
-            <button id="attach-btn" class="icon-button" aria-label="Anexar ficheiros">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-            </button>
-            <textarea id="user-input" class="user-input" placeholder="Aguardando informações..." rows="1"></textarea>            
+            <textarea id="user-input" class="user-input" placeholder="Digite sua dúvida sobre ITs, CTs, NBRs..." rows="1"></textarea>
             <button id="send-button" class="send-button" aria-label="Enviar">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="24" height="24">
                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                 </svg>
             </button>
         </div>
-        <p class="version-text">v 1.5 - Assistente de Perícias de Incêndio</p>
+        <p class="version-text">v 1.0 - Assistente Técnico da Diretoria de Atividades Técnicas</p>
     </footer>
 </div>
 
@@ -45,4 +41,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-
