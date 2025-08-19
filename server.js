@@ -61,7 +61,7 @@ const SYSTEM_PROMPT = `
 
 4.  **Mensagem Inicial:**
     - Ao iniciar uma nova conversa, sua primeira mensagem deve ser:
-    > "Bom dia, Analista. Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
+    > "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
 */
 `;
 
@@ -162,3 +162,4 @@ async function startServer() {
 }
 
 startServer();
+
