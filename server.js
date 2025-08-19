@@ -65,13 +65,16 @@ app.post('/api/generate', async (req, res) => {
         const contextDocs = await retriever.getRelevantDocuments(textQuery);
         context = contextDocs.map(doc => `Nome do Arquivo Fonte: ${doc.metadata.source?.split('/').pop() || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
     }
+    
+    // Cria uma cópia do histórico para não modificar o original que vem do frontend
+    const contents = JSON.parse(JSON.stringify(history));
 
     const body = {
-      contents: history,
+      contents: contents,
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
     };
 
-    if (!isInitialMessage) {
+    if (!isInitialMessage && body.contents.length > 0) {
         body.contents[body.contents.length - 1].parts.unshift({ text: `\nCONTEXTO DA BASE DE CONHECIMENTO:\n${context}\n---\n` });
     }
 
