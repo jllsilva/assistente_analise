@@ -5,13 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
     const newChatBtn = document.getElementById('new-chat-btn');
-    const attachBtn = document.getElementById('attach-btn');
-    const fileInput = document.getElementById('file-input');
-    const previewsArea = document.getElementById('previews-area');
     const appContainer = document.querySelector('.app-container');
 
     let chatHistory = [];
-    let attachedFiles = [];
 
     // --- FUNÇÕES DE APOIO ---
 
@@ -32,8 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNÇÕES DE CRIAÇÃO DE MENSAGENS ---
 
-    const addMessage = (sender, message, options = {}) => {
-        const { images = [] } = options;
+    const addMessage = (sender, message) => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
         
@@ -41,18 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
         bubble.className = 'message-bubble';
         if (message.startsWith('Houve um problema de conexão')) {
             bubble.classList.add('error');
-        }
-
-        if (images.length > 0) {
-            const imagesContainer = document.createElement('div');
-            imagesContainer.className = 'message-images-container';
-            images.forEach(imgBase64 => {
-                const img = document.createElement('img');
-                img.src = imgBase64;
-                img.alt = "Imagem anexada";
-                imagesContainer.appendChild(img);
-            });
-            bubble.appendChild(imagesContainer);
         }
 
         const textContent = document.createElement('div');
@@ -82,23 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             };
             
-            const shareBtn = document.createElement('button');
-            shareBtn.className = 'message-action-btn';
-            shareBtn.title = 'Compartilhar';
-            shareBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>`;
-            shareBtn.onclick = () => {
-                if (navigator.share) {
-                    navigator.share({ text: message });
-                } else {
-                    alert('A função de compartilhar não é suportada neste navegador.');
-                }
-            };
-
             actionsWrapper.appendChild(copyBtn);
-            if (navigator.share) {
-                actionsWrapper.appendChild(shareBtn);
-            }
-            
             bubble.appendChild(actionsWrapper);
         }
         
@@ -108,101 +75,18 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
-    // --- LÓGICA DE ANEXOS ---
-
-    const compressImage = (file, maxSize = 1280, quality = 0.7) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > maxSize) { height *= maxSize / width; width = maxSize; }
-                    } else {
-                        if (height > maxSize) { width *= maxSize / height; height = maxSize; }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    resolve({
-                        name: file.name,
-                        type: 'image/jpeg',
-                        content: dataUrl,
-                        base64: dataUrl.split(',')[1] // Extrai apenas o dado Base64
-                    });
-                };
-                img.onerror = reject;
-                img.src = event.target.result;
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    };
-
-    const updatePreviews = () => {
-        previewsArea.innerHTML = '';
-        attachedFiles.forEach((file, index) => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'preview-wrapper';
-            const img = document.createElement('img');
-            img.src = file.content;
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'remove-btn';
-            removeBtn.innerHTML = '&times;';
-            removeBtn.onclick = () => {
-                attachedFiles.splice(index, 1);
-                updatePreviews();
-            };
-            wrapper.appendChild(img);
-            wrapper.appendChild(removeBtn);
-            previewsArea.appendChild(wrapper);
-        });
-    };
-
-    const resetAttachments = () => {
-        attachedFiles = [];
-        fileInput.value = '';
-        previewsArea.innerHTML = '';
-    };
-
     // --- FUNÇÃO PRINCIPAL DE ENVIO ---
 
     const sendMessage = async () => {
         const text = userInput.value.trim();
-        if (!text && attachedFiles.length === 0) return;
+        if (!text) return;
         userInput.blur();
         sendButton.disabled = true;
 
-        // Mostra a mensagem do usuário com as imagens que ele anexou
-        const userMessageForDisplay = text || `Analisar ${attachedFiles.length} imagem(s)`;
-        const imageContentsForDisplay = attachedFiles.map(file => file.content);
-        addMessage('user', userMessageForDisplay, { images: imageContentsForDisplay });
+        addMessage('user', text);
 
-        // Monta o payload para o backend
-        const userParts = [];
-        if (text) {
-            userParts.push({ text: text });
-        }
-        attachedFiles.forEach(file => {
-            userParts.push({
-                inline_data: {
-                    mime_type: file.type,
-                    data: file.base64
-                }
-            });
-        });
+        chatHistory.push({ role: 'user', parts: [{ text }] });
 
-        chatHistory.push({ role: 'user', parts: userParts });
-
-        resetAttachments();
         userInput.value = '';
         userInput.style.height = 'auto';
         toggleTypingIndicator(true);
@@ -261,8 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startNewConversation = () => {
         chatHistory = [];
         chatContainer.innerHTML = '';
-        resetAttachments();
-        fetchInitialMessage(); // Nova chamada aqui!
+        fetchInitialMessage();
     };
 
     const fetchInitialMessage = async () => {
@@ -271,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ history: [] }), // Enviamos um histórico vazio
+                body: JSON.stringify({ history: [] }),
             });
 
             if (!response.ok) throw new Error('Falha ao buscar a mensagem inicial do servidor.');
@@ -288,19 +171,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const initializeApp = () => {
-    if (window.visualViewport) {
-        mobileInputHandler(); // Executa uma vez ao carregar
-        window.visualViewport.addEventListener('resize', mobileInputHandler); // E de novo sempre que a tela mudar de tamanho
-    } else {
-        const doc = document.documentElement;
-        doc.style.setProperty('--app-height', `${window.innerHeight}px`);
-        window.addEventListener('resize', () => {
+        if (window.visualViewport) {
+            mobileInputHandler();
+            window.visualViewport.addEventListener('resize', mobileInputHandler);
+        } else {
+            const doc = document.documentElement;
             doc.style.setProperty('--app-height', `${window.innerHeight}px`);
-        });
-    }
-    startNewConversation();
-    // A chamada para initializeMobileHandlers() pode ser removida daqui
-};
+            window.addEventListener('resize', () => {
+                doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+            });
+        }
+        startNewConversation();
+    };
 
     // --- Event Listeners ---
     newChatBtn.addEventListener('click', startNewConversation);
@@ -313,41 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     userInput.addEventListener('input', () => {
-    userInput.style.height = 'auto'; // Reseta a altura
-    // Define a nova altura com base no conteúdo, mas sem passar do limite
-    const newHeight = Math.min(userInput.scrollHeight, 150); // 150px é o max-height do seu CSS
-    userInput.style.height = `${newHeight}px`;
-});
-
-attachBtn.addEventListener('click', () => fileInput.click());
-    attachBtn.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', async (e) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-
-        previewsArea.innerHTML = `<p class="processing-text">Processando imagens...</p>`;
-
-        const compressionPromises = Array.from(files)
-            .filter(file => file.type.startsWith('image/'))
-            .map(file => compressImage(file));
-
-        try {
-            const compressedFiles = await Promise.all(compressionPromises);
-            attachedFiles.push(...compressedFiles);
-            updatePreviews();
-        } catch (error) {
-            console.error("Erro ao comprimir imagens:", error);
-            alert("Ocorreu um erro ao processar uma das imagens.");
-            updatePreviews();
-        }
+        userInput.style.height = 'auto';
+        const newHeight = Math.min(userInput.scrollHeight, 150);
+        userInput.style.height = `${newHeight}px`;
     });
 
     initializeApp();
 });
-
-
-
-
-
-
