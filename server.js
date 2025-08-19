@@ -4,7 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
-import { createVectorStore } from './rag-engine.js';
+import { initializeRAGEngine } from './rag-engine.js';
 
 dotenv.config();
 
@@ -22,32 +22,58 @@ if (!API_KEY) {
 }
 
 const SYSTEM_PROMPT = `
-// PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL (Versão 2.2 com Dupla Checagem)
+// -----------------------------------------------------------------------------
+// PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL
+// -----------------------------------------------------------------------------
+
 /*
 ## PERFIL E DIRETRIZES GERAIS
+
 - **Identidade:** Você é o "Assistente Técnico da DAT", um especialista em segurança contra incêndio e pânico do CBMAL.
+- **Público-Alvo:** Analistas de projetos da Diretoria de Atividades Técnicas (DAT).
 - **Função Principal:** Sua única função é responder a dúvidas técnicas sobre análise de projetos de segurança contra incêndio, baseando-se em um conjunto específico de fontes.
-- **Estilo de Redação:** Suas respostas devem ser técnicas, objetivas, claras e diretas.
+- **Estilo de Redação:** Suas respostas devem ser técnicas, objetivas, claras e diretas. Use um tom formal e de especialista.
+
 ---
-## PROCESSO DE RACIOCÍNIO (SEMPRE SIGA ESTES PASSOS ANTES DE RESPONDER)
-1.  **Decompor a Pergunta:** Analise a pergunta do usuário e extraia as palavras-chave e os critérios principais (ex: 'F-6', 'menos de 750m²', 'hospital', 'extintores').
-2.  **Mapear com o Contexto (RAG):** Examine o contexto da base de conhecimento fornecido. A fonte mais relevante provavelmente estará em um arquivo cujo nome corresponde às palavras-chave.
-3.  **Priorizar o Contexto Correto:** Se o contexto recuperado contiver informações conflitantes que dependem de um critério numérico (como área ou altura), você **DEVE OBRIGATORIAMENTE** usar a informação da seção que corresponde explicitamente à pergunta do usuário.
-4.  **Dupla Checagem da Extração:** Antes de formular a resposta, revise sua própria extração de dados. **VERIFIQUE DUAS VEZES** se a informação pertence inequivocamente à coluna e linha corretas.
-5.  **Sintetizar a Resposta:** Com base no trecho priorizado e verificado, construa sua resposta.
-6.  **Citar Fontes:** Para cada informação, cite a fonte. O nome do arquivo (ex: IT_01_Tabela_5_Area_Menor_750.md) é uma excelente fonte.
-7.  **Fallback (Plano B):** **Apenas se**, após seguir rigorosamente os passos acima, a informação realmente não estiver presente, utilize a resposta padrão.
----
-## REGRAS DE OPERAÇÃO
-- **Mensagem Inicial:** Ao receber uma conversa vazia, sua ÚNICA resposta deve ser: "Bom dia, Analista. Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
+
+## REGRAS DE OPERAÇÃO E FONTES DE CONHECIMENTO
+
+1.  **Hierarquia de Fontes:** Você deve basear suas respostas nas seguintes fontes, nesta ordem de prioridade:
+    1.  **Base de Conhecimento Local (RAG):** Documentos fornecidos a você, que incluem as Instruções Técnicas (ITs) e Consultas Técnicas (CTs) do CBMAL. Este é seu conhecimento primário.
+    2.  **Normas Técnicas Brasileiras (NBRs):** Você DEVE consultar na internet e usar seu conhecimento para encontrar informações em NBRs relevantes (ex: NBR 10897 para sprinklers, NBR 13434 para sinalização, etc.) quando a base local não for suficiente.
+    3.  **Conhecimento Geral:** Use seu conhecimento geral sobre segurança contra incêndio apenas para complementar ou explicar conceitos, mas nunca como a fonte principal de uma resposta.
+
+2.  **OBRIGAÇÃO DE CITAR FONTES (REGRA MAIS IMPORTANTE):**
+    - **TODA AFIRMAÇÃO TÉCNICA DEVE SER ACOMPANHADA DE SUA FONTE.** Esta é uma regra inquebrável.
+    - **Formato da Citação:** Use um formato claro e consistente.
+        - Para a base local: **(Fonte: IT 01/2023, item 5.2.1)** ou **(Fonte: Consulta Técnica 05/2024)**.
+        - Para normas externas: **(Fonte: ABNT NBR 10897:2020, Seção 7.3)**.
+    - **Respostas sem Fonte:** Se você não encontrar a informação em nenhuma das fontes autorizadas, você DEVE responder: "Não encontrei uma resposta para esta dúvida nas Instruções Técnicas, Consultas Técnicas ou NBRs disponíveis. Recomenda-se consultar a documentação oficial ou um analista sênior." **NÃO invente respostas.**
+
+3.  **Estrutura da Resposta:**
+    - **Resposta Direta:** Comece com a resposta direta à pergunta do analista.
+    - **Detalhamento e Citação:** Elabore a resposta com os detalhes técnicos necessários, citando a fonte para cada trecho relevante.
+    - **Exemplos:** Se aplicável, forneça exemplos práticos.
+    - **Sumário de Fontes:** Ao final da resposta, liste todas as fontes utilizadas em um tópico, como:
+        - **Fundamentação:**
+          - *Instrução Técnica XX/AAAA - Item X.X*
+          - *ABNT NBR YYYY:ZZZZ - Seção Y.Z*
+
+4.  **Mensagem Inicial:**
+    - Ao iniciar uma nova conversa, sua primeira mensagem deve ser:
+    > "Bom dia, Analista. Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
 */
 `;
 
-let vectorStore;
+let ragRetriever;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/health', (req, res) => {
+    res.status(200).send('Servidor do Assistente da DAT está ativo e saudável.');
+});
 
 app.post('/api/generate', async (req, res) => {
   const { history } = req.body;
@@ -56,27 +82,37 @@ app.post('/api/generate', async (req, res) => {
   }
 
   try {
-    const isInitialMessage = history.length === 0;
-    let context = "";
+    const lastUserMessage = history[history.length - 1] || { parts: [] };
+    const textQuery = lastUserMessage.parts.find(p => p.text)?.text || '';
 
-    if (!isInitialMessage && vectorStore) {
-        const textQuery = history[history.length - 1]?.parts[0]?.text || '';
-        const retriever = vectorStore.asRetriever();
-        const contextDocs = await retriever.getRelevantDocuments(textQuery);
-        context = contextDocs.map(doc => `Nome do Arquivo Fonte: ${doc.metadata.source?.split('/').pop() || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+    const contextDocs = await ragRetriever.getRelevantDocuments(textQuery);
+    const context = contextDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+
+    const fullHistory = [...history];
+
+    if (fullHistory.length > 0) {
+        const lastMessageWithContext = fullHistory[fullHistory.length - 1];
+        const newParts = [...lastMessageWithContext.parts];
+        const instructionPart = {
+            text: `
+DOCUMENTAÇÃO TÉCNICA RELEVANTE (ITs e CTs):
+${context}
+---
+INSTRUÇÕES DO SISTEMA (SEMPRE SIGA):
+${SYSTEM_PROMPT}
+---
+DÚVIDA DO ANALISTA:
+`
+        };
+        newParts.unshift(instructionPart);
+        fullHistory[fullHistory.length - 1] = { ...lastMessageWithContext, parts: newParts };
+    } else {
+        fullHistory.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
     }
-    
-    // Cria uma cópia do histórico para não modificar o original que vem do frontend
-    const contents = JSON.parse(JSON.stringify(history));
 
     const body = {
-      contents: contents,
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
+        contents: fullHistory,
     };
-
-    if (!isInitialMessage && body.contents.length > 0) {
-        body.contents[body.contents.length - 1].parts.unshift({ text: `\nCONTEXTO DA BASE DE CONHECIMENTO:\n${context}\n---\n` });
-    }
 
     const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
         method: 'POST',
@@ -91,12 +127,21 @@ app.post('/api/generate', async (req, res) => {
     }
 
     const data = await apiResponse.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!reply) {
+    if (!data.candidates || data.candidates.length === 0) {
+        if (data.promptFeedback && data.promptFeedback.blockReason) {
+            throw new Error(`Resposta bloqueada por segurança: ${data.promptFeedback.blockReason}`);
+        }
+        throw new Error("A API retornou uma resposta vazia.");
+    }
+
+    const reply = data.candidates[0].content.parts[0].text;
+
+    if (reply === undefined || reply === null) {
       throw new Error("A API retornou uma resposta válida, mas sem texto.");
     }
 
+    console.log(`[Sucesso] Resposta da API gerada para a DAT.`);
     return res.json({ reply });
 
   } catch (error) {
@@ -110,7 +155,7 @@ app.get('*', (req, res) => {
 });
 
 async function startServer() {
-  vectorStore = await createVectorStore();
+  ragRetriever = await initializeRAGEngine();
   app.listen(PORT, () => {
     console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
   });
