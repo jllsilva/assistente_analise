@@ -1,6 +1,7 @@
 import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { TextLoader } from "langchain/document_loaders/fs/text"; // Adicionado import
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
@@ -15,6 +16,7 @@ export async function initializeRAGEngine() {
       {
         '.pdf': (path) => new PDFLoader(path, { splitPages: false }),
         '.docx': (path) => new DocxLoader(path),
+        '.md': (path) => new TextLoader(path), // Nova linha para ler arquivos .md
       }
     );
     const docs = await loader.load();
