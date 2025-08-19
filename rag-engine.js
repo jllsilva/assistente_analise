@@ -6,7 +6,6 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
-// Esta função agora cria e retorna a base de vetores (vector store)
 export async function createVectorStore() {
   try {
     console.log('[Vector Store] Iniciando indexação da base de conhecimento...');
