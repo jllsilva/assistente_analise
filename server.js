@@ -4,7 +4,6 @@ import cors from 'cors';
 import path from 'path';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
-// CORREÇÃO: Importando a nova função 'createVectorStore'
 import { createVectorStore } from './rag-engine.js';
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { MultiQueryRetriever } from "langchain/retrievers/multi_query";
@@ -40,10 +39,14 @@ const SYSTEM_PROMPT = `
 5.  **Sintetizar a Resposta:** Com base no trecho priorizado e verificado, construa sua resposta.
 6.  **Citar Fontes:** Para cada informação, cite a fonte específica de onde ela foi retirada.
 7.  **Fallback (Plano B):** **Apenas se**, após seguir rigorosamente os passos acima, a informação realmente não estiver presente, utilize a resposta padrão.
+---
+## REGRAS DE OPERAÇÃO
+- **OBRIGAÇÃO DE CITAR FONTES:** TODA AFIRMAÇÃO TÉCNICA DEVE SER ACOMPANHADA DE SUA FONTE.
+- **Mensagem Inicial:** Ao receber uma conversa vazia, sua ÚNICA resposta deve ser: "Bom dia, Analista. Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
 */
 `;
 
-let vectorStore; // A base de vetores agora fica na memória do servidor
+let vectorStore;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -55,48 +58,38 @@ app.get('/health', (req, res) => {
 
 app.post('/api/generate', async (req, res) => {
   const { history } = req.body;
-  if (!history || !vectorStore) {
-    return res.status(400).json({ error: 'Histórico da conversa é obrigatório ou a base de conhecimento não foi inicializada.' });
+  if (!history) {
+    return res.status(400).json({ error: 'O histórico da conversa é obrigatório.' });
   }
 
   try {
-    const lastUserMessage = history[history.length - 1] || { parts: [] };
-    const textQuery = lastUserMessage.parts.find(p => p.text)?.text || '';
+    const isInitialMessage = history.length === 0;
+    let context = "";
 
-    // LÓGICA DE BUSCA INTELIGENTE
-    const llm = new ChatGoogleGenerativeAI({ apiKey: API_KEY, modelName: API_MODEL, temperature: 0 });
-    const retriever = MultiQueryRetriever.fromLLM({
-        llm: llm,
-        retriever: vectorStore.asRetriever(),
-        verbose: true,
-    });
+    if (!isInitialMessage) {
+        const textQuery = history[history.length - 1]?.parts[0]?.text || '';
+        if (textQuery && vectorStore) {
+            const llm = new ChatGoogleGenerativeAI({ apiKey: API_KEY, modelName: API_MODEL, temperature: 0 });
+            const retriever = MultiQueryRetriever.fromLLM({
+                llm: llm,
+                retriever: vectorStore.asRetriever(),
+                verbose: true,
+            });
+            const contextDocs = await retriever.getRelevantDocuments(textQuery);
+            context = contextDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+        }
 
-    const contextDocs = await retriever.getRelevantDocuments(textQuery);
-    const context = contextDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
-
-    const fullHistory = [...history];
-
-    if (fullHistory.length > 0) {
-        const lastMessageWithContext = fullHistory[fullHistory.length - 1];
-        const newParts = [...lastMessageWithContext.parts];
-        const instructionPart = {
-            text: `
-DOCUMENTAÇÃO TÉCNICA RELEVANTE (ITs e CTs):
-${context}
----
-INSTRUÇÕES DO SISTEMA (SEMPRE SIGA):
-${SYSTEM_PROMPT}
----
-DÚVIDA DO ANALISTA:
-`
-        };
-        newParts.unshift(instructionPart);
-        fullHistory[fullHistory.length - 1] = { ...lastMessageWithContext, parts: newParts };
-    } else {
-        fullHistory.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
+        // Adiciona o contexto do RAG à última mensagem do usuário
+        const lastMessage = history[history.length - 1];
+        lastMessage.parts.unshift({ text: `CONTEXTO DA BASE DE CONHECIMENTO:\n${context}\n---\nPERGUNTA DO ANALISTA:` });
     }
 
-    const body = { contents: fullHistory };
+    const body = {
+      contents: history, // Apenas o histórico da conversa
+      systemInstruction: { // As instruções do sistema vão separadas
+        parts: [{ text: SYSTEM_PROMPT }]
+      }
+    };
 
     const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
         method: 'POST',
@@ -129,17 +122,11 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// CORREÇÃO: Chamando a nova função 'createVectorStore'
 async function startServer() {
   vectorStore = await createVectorStore();
-  if (vectorStore) {
-    app.listen(PORT, () => {
-        console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
-    });
-  } else {
-    console.error("Falha crítica: a base de vetores não pôde ser criada. O servidor não será iniciado.");
-    process.exit(1);
-  }
+  app.listen(PORT, () => {
+    console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
+  });
 }
 
 startServer();
