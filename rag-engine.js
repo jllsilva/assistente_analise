@@ -2,8 +2,8 @@ import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { TextLoader } from "langchain/document_loaders/fs/text";
-// CORREÇÃO: O caminho da importação foi ajustado para o local correto.
-import { MarkdownHeaderTextSplitter } from "langchain/text_splitters/markdown";
+// CORREÇÃO FINAL: Importando do caminho correto para a versão 0.1.37
+import { MarkdownHeaderTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
@@ -27,7 +27,6 @@ export async function initializeRAGEngine() {
       return { getRelevantDocuments: () => Promise.resolve([]) };
     }
 
-    // --- ESTRATÉGIA DE DIVISÃO DE TEXTO ESPECIALISTA EM MARKDOWN ---
     const headersToSplitOn = [
         ["#", "Header1"],
         ["##", "Header2"],
