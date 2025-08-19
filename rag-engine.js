@@ -2,8 +2,8 @@ import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { TextLoader } from "langchain/document_loaders/fs/text";
-// CORREÇÃO FINAL: Importando do caminho correto para a versão 0.1.37
-import { MarkdownHeaderTextSplitter } from "langchain/text_splitter";
+// CORREÇÃO DEFINITIVA: Importando do pacote específico @langchain/textsplitters
+import { MarkdownHeaderTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
