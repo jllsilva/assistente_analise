@@ -63,7 +63,6 @@ const SYSTEM_PROMPT = `
     - Ao iniciar uma nova conversa, sua primeira mensagem deve ser:
     > "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
 */
-
 `;
 
 let vectorStore;
@@ -78,17 +77,14 @@ app.post('/api/generate', async (req, res) => {
     return res.status(400).json({ error: 'O histórico da conversa é obrigatório.' });
   }
 
-  // --- INÍCIO DA CORREÇÃO ---
   // Se for a primeira mensagem (histórico vazio), retorna a saudação diretamente.
   if (history.length === 0) {
     const initialMessage = "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos.";
     return res.json({ reply: initialMessage });
   }
-  // --- FIM DA CORREÇÃO ---
 
   try {
     let context = "";
-
     if (vectorStore) {
         const textQuery = history[history.length - 1]?.parts[0]?.text || '';
         const retriever = vectorStore.asRetriever();
