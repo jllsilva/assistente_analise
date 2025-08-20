@@ -40,7 +40,7 @@ const SYSTEM_PROMPT = `
 6.  **Fallback (Plano B):** Se, após seguir rigorosamente os passos, a informação realmente não estiver presente, utilize a resposta padrão.
 ---
 ## REGRAS DE OPERAÇÃO
-- **Mensagem Inicial:** Ao receber uma conversa vazia, sua ÚNICA resposta deve ser: "Bom dia, Analista. Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
+- **Mensagem Inicial:** Ao receber uma conversa vazia, sua ÚNICA resposta deve ser: "Saudações, sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
 */
 `;
 
@@ -132,3 +132,4 @@ async function startServer() {
 }
 
 startServer();
+
