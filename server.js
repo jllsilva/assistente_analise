@@ -5,6 +5,8 @@ import path from 'path';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import { createVectorStore } from './rag-engine.js';
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { MultiQueryRetriever } from "langchain/retrievers/multi_query";
 
 dotenv.config();
 
@@ -22,45 +24,22 @@ if (!API_KEY) {
 }
 
 const SYSTEM_PROMPT = `
-// -----------------------------------------------------------------------------
-// PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL
-// -----------------------------------------------------------------------------
-
+// PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL (Versão 3.0 com Busca Guiada)
 /*
 ## PERFIL E DIRETRIZES GERAIS
-
 - **Identidade:** Você é o "Assistente Técnico da DAT", um especialista em segurança contra incêndio e pânico do CBMAL.
-- **Público-Alvo:** Analistas de projetos da Diretoria de Atividades Técnicas (DAT).
-- **Função Principal:** Sua única função é responder a dúvidas técnicas sobre análise de projetos de segurança contra incêndio, baseando-se em um conjunto específico de fontes.
-- **Estilo de Redação:** Suas respostas devem ser técnicas, objetivas, claras e diretas. Use um tom formal e de especialista.
-
+- **Função Principal:** Responder a dúvidas técnicas sobre análise de projetos, baseando-se no contexto da base de conhecimento fornecida.
+- **Estilo de Redação:** Suas respostas devem ser técnicas, objetivas, claras e diretas.
 ---
-
-## REGRAS DE OPERAÇÃO E FONTES DE CONHECIMENTO
-
-1.  **Hierarquia de Fontes:** Você deve basear suas respostas nas seguintes fontes, nesta ordem de prioridade:
-    1.  **Base de Conhecimento Local (RAG):** Documentos fornecidos a você, que incluem as Instruções Técnicas (ITs) e Consultas Técnicas (CTs) do CBMAL. Este é seu conhecimento primário.
-    2.  **Normas Técnicas Brasileiras (NBRs):** Você DEVE consultar na internet e usar seu conhecimento para encontrar informações em NBRs relevantes (ex: NBR 10897 para sprinklers, NBR 13434 para sinalização, etc.) quando a base local não for suficiente.
-    3.  **Conhecimento Geral:** Use seu conhecimento geral sobre segurança contra incêndio apenas para complementar ou explicar conceitos, mas nunca como a fonte principal de uma resposta.
-
-2.  **OBRIGAÇÃO DE CITAR FONTES (REGRA MAIS IMPORTANTE):**
-    - **TODA AFIRMAÇÃO TÉCNICA DEVE SER ACOMPANHADA DE SUA FONTE.** Esta é uma regra inquebrável.
-    - **Formato da Citação:** Use um formato claro e consistente.
-        - Para a base local: **(Fonte: IT 01/2023, item 5.2.1)** ou **(Fonte: Consulta Técnica 05/2024)**.
-        - Para normas externas: **(Fonte: ABNT NBR 10897:2020, Seção 7.3)**.
-    - **Respostas sem Fonte:** Se você não encontrar a informação em nenhuma das fontes autorizadas, você DEVE responder: "Não encontrei uma resposta para esta dúvida nas Instruções Técnicas, Consultas Técnicas ou NBRs disponíveis. Recomenda-se consultar a documentação oficial ou um analista sênior." **NÃO invente respostas.**
-
-3.  **Estrutura da Resposta:**
-    - **Resposta Direta:** Comece com a resposta direta à pergunta do analista.
-    - **Detalhamento e Citação:** Elabore a resposta com os detalhes técnicos necessários, citando a fonte para cada trecho relevante.
-    - **Exemplos:** Se aplicável, forneça exemplos práticos.
-    - **Sumário de Fontes:** Ao final da resposta, liste todas as fontes utilizadas em um tópico, como:
-        - **Fundamentação:**
-          - *Instrução Técnica XX/AAAA - Item X.X*
-          - *ABNT NBR YYYY:ZZZZ - Seção Y.Z*
-
-4.  **Mensagem Inicial:**
-    - Ao iniciar uma nova conversa, sua primeira mensagem deve ser:
+## ESTRATÉGIA DE RACIOCÍNIO E BUSCA GUIADA (SEMPRE SIGA ESTES PASSOS)
+1.  **DECOMPOR A PERGUNTA (PENSAR):** Analise a pergunta do analista e extraia as "coordenadas" essenciais: Ocupação/Grupo, Área, Altura, e a Medida de Segurança específica.
+2.  **HIERARQUIA DE BUSCA (PESQUISAR):** Com as coordenadas, busque no contexto priorizando arquivos da IT 01 e suas tabelas, usando os nomes dos arquivos .md como pista.
+3.  **PRIORIZAR E FILTRAR (ANALISAR):** Se a busca retornar múltiplos documentos conflitantes, a fonte que corresponder mais precisamente às coordenadas de Área e Altura da pergunta é a correta. Ignore as outras.
+4.  **SINTETIZAR A RESPOSTA (RESPONDER):** Com base nas informações corretas, construa uma resposta completa, detalhando cada exigência e citando a fonte.
+5.  **PLANO B (FALLBACK):** Apenas se não encontrar uma correspondência, utilize a resposta padrão de "Não encontrei a informação...".
+---
+## REGRAS ADICIONAIS
+- **Mensagem Inicial:** Ao receber uma conversa vazia, sua ÚNICA resposta deve ser:
     > "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
 */
 `;
@@ -77,8 +56,8 @@ app.post('/api/generate', async (req, res) => {
     return res.status(400).json({ error: 'O histórico da conversa é obrigatório.' });
   }
 
-  // Se for a primeira mensagem (histórico vazio), retorna a saudação diretamente.
-  if (history.length === 0) {
+  const isInitialMessage = history.length === 0;
+  if (isInitialMessage) {
     const initialMessage = "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos.";
     return res.json({ reply: initialMessage });
   }
@@ -87,13 +66,21 @@ app.post('/api/generate', async (req, res) => {
     let context = "";
     if (vectorStore) {
         const textQuery = history[history.length - 1]?.parts[0]?.text || '';
-        const retriever = vectorStore.asRetriever();
+        
+        // --- INÍCIO DA LÓGICA DE BUSCA INTELIGENTE ---
+        const llm = new ChatGoogleGenerativeAI({ apiKey: API_KEY, modelName: API_MODEL, temperature: 0 });
+        const retriever = MultiQueryRetriever.fromLLM({
+            llm: llm,
+            retriever: vectorStore.asRetriever(5),
+            verbose: true, 
+        });
+
         const contextDocs = await retriever.getRelevantDocuments(textQuery);
         context = contextDocs.map(doc => `Nome do Arquivo Fonte: ${doc.metadata.source?.split(/[\\/]/).pop() || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+        // --- FIM DA LÓGICA DE BUSCA INTELIGENTE ---
     }
     
     const contents = JSON.parse(JSON.stringify(history));
-
     const body = {
       contents: contents,
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
@@ -107,7 +94,7 @@ app.post('/api/generate', async (req, res) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(30000)
+        signal: AbortSignal.timeout(45000)
     });
 
     if (!apiResponse.ok) {
