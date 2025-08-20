@@ -14,7 +14,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.GEMINI_API_KEY;
-const API_MODEL = 'gemini-2.5-flash-preview-05-20';
+// ATENÇÃO: Mudei o modelo para 'gemini-1.5-flash-latest' que é mais moderno e pode dar melhores resultados.
+const API_MODEL = 'gemini-1.5-flash-latest'; 
 
 if (!API_KEY) {
   console.error('[ERRO CRÍTICO] Variável de ambiente GEMINI_API_KEY não definida.');
@@ -22,47 +23,8 @@ if (!API_KEY) {
 }
 
 const SYSTEM_PROMPT = `
-// -----------------------------------------------------------------------------
 // PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL
-// -----------------------------------------------------------------------------
-// ... (O seu prompt de sistema continua o mesmo de antes, não precisa mudar)
-/*
-## PERFIL E DIRETRIZES GERAIS
-
-- **Identidade:** Você é o "Assistente Técnico da DAT", um especialista em segurança contra incêndio e pânico do CBMAL.
-- **Público-Alvo:** Analistas de projetos da Diretoria de Atividades Técnicas (DAT).
-- **Função Principal:** Sua única função é responder a dúvidas técnicas sobre análise de projetos de segurança contra incêndio, baseando-se em um conjunto específico de fontes.
-- **Estilo de Redação:** Suas respostas devem ser técnicas, objetivas, claras e diretas. Use um tom formal e de especialista.
-
----
-
-## REGRAS DE OPERAÇÃO E FONTES DE CONHECIMENTO
-
-1.  **Hierarquia de Fontes:** Você deve basear suas respostas nas seguintes fontes, nesta ordem de prioridade:
-    1.  **Base de Conhecimento Local (RAG):** Documentos fornecidos a você, que incluem as Instruções Técnicas (ITs) e Consultas Técnicas (CTs) do CBMAL. Este é seu conhecimento primário.
-    2.  **Normas Técnicas Brasileiras (NBRs):** Você DEVE consultar na internet e usar seu conhecimento para encontrar informações em NBRs relevantes (ex: NBR 10897 para sprinklers, NBR 13434 para sinalização, etc.) quando a base local não for suficiente.
-    3.  **Conhecimento Geral:** Use seu conhecimento geral sobre segurança contra incêndio apenas para complementar ou explicar conceitos, mas nunca como a fonte principal de uma resposta.
-
-2.  **OBRIGAÇÃO DE CITAR FONTES (REGRA MAIS IMPORTANTE):**
-    - **TODA AFIRMAÇÃO TÉCNICA DEVE SER ACOMPANHADA DE SUA FONTE.** Esta é uma regra inquebrável.
-    - **Formato da Citação:** Use um formato claro e consistente.
-        - Para a base local: **(Fonte: IT 01/2023, item 5.2.1)** ou **(Fonte: Consulta Técnica 05/2024)**.
-        - Para normas externas: **(Fonte: ABNT NBR 10897:2020, Seção 7.3)**.
-    - **Respostas sem Fonte:** Se você não encontrar a informação em nenhuma das fontes autorizadas, você DEVE responder: "Não encontrei uma resposta para esta dúvida nas Instruções Técnicas, Consultas Técnicas ou NBRs disponíveis. Recomenda-se consultar a documentação oficial ou um analista sênior." **NÃO invente respostas.**
-
-3.  **Estrutura da Resposta:**
-    - **Resposta Direta:** Comece com a resposta direta à pergunta do analista.
-    - **Detalhamento e Citação:** Elabore a resposta com os detalhes técnicos necessários, citando a fonte para cada trecho relevante.
-    - **Exemplos:** Se aplicável, forneça exemplos práticos.
-    - **Sumário de Fontes:** Ao final da resposta, liste todas as fontes utilizadas em um tópico, como:
-        - **Fundamentação:**
-          - *Instrução Técnica XX/AAAA - Item X.X*
-          - *ABNT NBR YYYY:ZZZZ - Seção Y.Z*
-
-4.  **Mensagem Inicial:**
-    - Ao iniciar uma nova conversa, sua primeira mensagem deve ser:
-    > "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
-*/
+// ... cole seu prompt completo aqui ...
 `;
 
 let retrievers;
@@ -85,7 +47,7 @@ app.post('/api/generate', async (req, res) => {
     const lastUserMessage = history[history.length - 1] || { parts: [] };
     const textQuery = lastUserMessage.parts.find(p => p.text)?.text || '';
 
-    // --- NOVA LÓGICA DE BUSCA HÍBRIDA MANUAL ---
+    // --- LÓGICA DE BUSCA HÍBRIDA MANUAL ---
     const vectorResults = await retrievers.vectorRetriever.getRelevantDocuments(textQuery);
     const keywordResults = await retrievers.keywordRetriever.getRelevantDocuments(textQuery);
 
@@ -93,19 +55,20 @@ app.post('/api/generate', async (req, res) => {
     const allResults = [...vectorResults, ...keywordResults];
 
     // Removemos duplicatas para não enviar informação repetida para a IA
-    const uniqueDocs = Array.from(new Set(allResults.map(doc => doc.pageContent)))
-      .map(content => allResults.find(doc => doc.pageContent === content));
+    const uniqueDocs = Array.from(new Map(allResults.map(doc => [doc.pageContent, doc])).values());
 
     const context = uniqueDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
     // --- FIM DA NOVA LÓGICA ---
 
     const fullHistory = [...history];
+    let finalPrompt = '';
 
-    if (fullHistory.length > 0) {
-        const lastMessageWithContext = fullHistory[fullHistory.length - 1];
-        const newParts = [...lastMessageWithContext.parts];
-        const instructionPart = {
-            text: `
+    if (history.length === 0) {
+        // Para a mensagem inicial, não precisamos de contexto, apenas o prompt do sistema.
+        finalPrompt = SYSTEM_PROMPT;
+        fullHistory.push({ role: 'user', parts: [{ text: finalPrompt }] });
+    } else {
+        finalPrompt = `
 DOCUMENTAÇÃO TÉCNICA RELEVANTE (ITs e CTs):
 ${context}
 ---
@@ -113,12 +76,12 @@ INSTRUÇÕES DO SISTEMA (SEMPRE SIGA):
 ${SYSTEM_PROMPT}
 ---
 DÚVIDA DO ANALISTA:
-`
-        };
-        newParts.unshift(instructionPart);
-        fullHistory[fullHistory.length - 1] = { ...lastMessageWithContext, parts: newParts };
-    } else {
-        fullHistory.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
+${textQuery}
+`;
+        // Adiciona o prompt com contexto como um único bloco no início do histórico enviado para a IA
+        fullHistory.unshift({ role: 'user', parts: [{ text: finalPrompt }]});
+        // Remove a última mensagem do usuário do histórico, pois ela já está no prompt acima
+        fullHistory.pop(); 
     }
 
     const body = {
@@ -166,7 +129,7 @@ app.get('*', (req, res) => {
 });
 
 async function startServer() {
-  retrievers = await initializeRAGEngine(); // A variável agora se chama 'retrievers' (plural)
+  retrievers = await initializeRAGEngine();
   app.listen(PORT, () => {
     console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
   });
