@@ -10,13 +10,20 @@ services:
       - key: GEMINI_API_KEY
         fromService:
           type: web
-          name: assistente-dat-retriever # Puxa a chave de API do serviço Python
+          name: assistente-dat-retriever
           envVarKey: GEMINI_API_KEY
-      - key: RETRIEVER_URL
+      # CORREÇÃO: Pedindo o HOST em vez da URL completa
+      - key: RETRIEVER_HOST
         fromService:
           type: web
-          name: assistente-dat-retriever # Pega a URL interna do serviço Python
-          property: url
+          name: assistente-dat-retriever
+          property: host
+      # CORREÇÃO: Adicionando a PORTA
+      - key: RETRIEVER_PORT
+        fromService:
+          type: web
+          name: assistente-dat-retriever
+          property: port
 
   # Serviço 2: O Serviço de Busca em Python
   - type: web
@@ -29,4 +36,4 @@ services:
     healthCheckPath: /
     envVars:
       - key: GEMINI_API_KEY
-        sync: false # Você vai colar sua chave de API aqui no painel do Render
+        sync: false # Cole sua chave de API aqui no painel do Render
