@@ -1,0 +1,32 @@
+services:
+  # Serviço 1: O Frontend e Servidor Principal em Node.js
+  - type: web
+    name: assistente-dat-frontend
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: GEMINI_API_KEY
+        fromService:
+          type: web
+          name: assistente-dat-retriever # Puxa a chave de API do serviço Python
+          envVarKey: GEMINI_API_KEY
+      - key: RETRIEVER_URL
+        fromService:
+          type: web
+          name: assistente-dat-retriever # Pega a URL interna do serviço Python
+          property: url
+
+  # Serviço 2: O Serviço de Busca em Python
+  - type: web
+    name: assistente-dat-retriever
+    env: python
+    plan: free
+    rootDir: ./retriever_service
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false # Você vai colar sua chave de API aqui no painel do Render
