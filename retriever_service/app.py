@@ -2,15 +2,15 @@ import os
 from flask import Flask, request, jsonify
 from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader, TextLoader
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.retrievers.multi_query import MultiQueryRetriever
 from dotenv import load_dotenv
 
 # Carrega as variáveis de ambiente do arquivo .env na pasta raiz
 load_dotenv('../.env')
 
 # Configura a chave de API para as bibliotecas do Google
-# É crucial que a GEMINI_API_KEY esteja no seu arquivo .env ou nas variáveis de ambiente do Render
 if "GEMINI_API_KEY" not in os.environ:
     raise ValueError("Variável de ambiente GEMINI_API_KEY não encontrada.")
 os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
@@ -19,19 +19,22 @@ app = Flask(__name__)
 
 # --- Carrega a base de conhecimento na inicialização ---
 vector_store = None
+llm = None # Vamos inicializar o modelo de linguagem aqui
 
 def initialize_knowledge_base():
-    global vector_store
+    global vector_store, llm
     try:
-        print("[Retriever Service] Iniciando indexação da base de conhecimento...")
-        # O caminho aponta para a pasta um nível acima
+        print("[Retriever Service] Iniciando indexação e carregando LLM...")
+        
+        # Inicializa o LLM que será usado para gerar as buscas
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-05-20", temperature=0)
+
         knowledge_base_path = '../knowledge_base/'
         
         loader = DirectoryLoader(
             knowledge_base_path,
-            glob="**/[!.]*",  # Padrão para pegar todos os arquivos (pdf, md, etc)
+            glob="**/[!.]*",
             use_multithreading=True,
-            # Define o carregador a ser usado com base na extensão do arquivo
             loader_cls=lambda path: PyPDFLoader(path) if path.lower().endswith('.pdf') else TextLoader(path, encoding='utf-8')
         )
         docs = loader.load()
@@ -54,9 +57,9 @@ def initialize_knowledge_base():
 # --- Define o endpoint de busca ---
 @app.route('/buscar', methods=['POST'])
 def buscar_contexto():
-    global vector_store
-    if not vector_store:
-        return jsonify({"error": "A base de conhecimento não está disponível ou não foi carregada."}), 503
+    global vector_store, llm
+    if not vector_store or not llm:
+        return jsonify({"error": "A base de conhecimento ou o LLM não estão disponíveis."}), 503
 
     data = request.get_json()
     if not data or 'query' not in data:
@@ -66,9 +69,14 @@ def buscar_contexto():
     print(f"[Retriever Service] Recebida a query: {query}")
 
     try:
-        # Usando a busca de similaridade simples e eficaz do vector store
-        retriever = vector_store.as_retriever(search_kwargs={"k": 5}) # Busca os 5 trechos mais relevantes
+        # --- INÍCIO DA BUSCA INTELIGENTE ---
+        # Usando o MultiQueryRetriever para gerar múltiplas buscas
+        retriever = MultiQueryRetriever.from_llm(
+            retriever=vector_store.as_retriever(), 
+            llm=llm
+        )
         docs = retriever.invoke(query)
+        # --- FIM DA BUSCA INTELIGENTE ---
         
         context_list = []
         for doc in docs:
@@ -90,5 +98,4 @@ def health_check():
 
 if __name__ == '__main__':
     initialize_knowledge_base()
-    # O Render vai fornecer a porta através da variável de ambiente PORT
     app.run(host='0.0.0.0', port=int(os.getenv("PORT", 5000)))
