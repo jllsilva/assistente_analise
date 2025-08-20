@@ -5,6 +5,10 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
+// NOVAS IMPORTAÇÕES PARA A BUSCA HÍBRIDA EM MEMÓRIA
+import { BM25Retriever } from "@langchain/community/retrievers/bm25";
+import { EnsembleRetriever } from "langchain/retrievers/ensemble";
+
 // Esta função irá inicializar todo o nosso motor de busca
 export async function initializeRAGEngine() {
   try {
@@ -13,7 +17,7 @@ export async function initializeRAGEngine() {
     const loader = new DirectoryLoader(
       './knowledge_base',
       {
-        '.pdf': (path) => new PDFLoader(path, { splitPages: false }),
+        '.pdf': (path) => new PDFLoader(path, { splitPages: true }), // Manter splitPages: true é uma boa prática
         '.docx': (path) => new DocxLoader(path),
       }
     );
@@ -25,8 +29,8 @@ export async function initializeRAGEngine() {
     }
 
     const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1500,
-      chunkOverlap: 200,
+      chunkSize: 900,
+      chunkOverlap: 150,
     });
     const splits = await textSplitter.splitDocuments(docs);
 
@@ -35,11 +39,35 @@ export async function initializeRAGEngine() {
         modelName: "text-embedding-004"
     });
 
+    console.log('[RAG Engine] Criando buscador vetorial em memória...');
     const vectorStore = await MemoryVectorStore.fromDocuments(splits, embeddings);
 
-    console.log(`[RAG Engine] Indexação concluída. ${splits.length} pedaços de texto carregados na memória.`);
+    console.log('[RAG Engine] Criando buscador de keyword (BM25) em memória...');
+    
+    // 1. O Buscador de Keyword (BM25)
+    // Ele funciona diretamente com os documentos em memória, sem precisar de um banco de dados.
+    const bm25Retriever = new BM25Retriever({
+        vectorStore: undefined,
+        documents: splits,
+        k: 6, // Número de resultados que o BM25 vai buscar
+    });
 
-    return vectorStore.asRetriever({ k: 4 });
+    // 2. O Buscador Vetorial (Semântico)
+    // Este é o que você já tinha, mas agora ele trabalhará em equipe.
+    const vectorStoreRetriever = vectorStore.asRetriever({ k: 6 });
+
+    console.log('[RAG Engine] Combinando buscadores com o Ensemble Retriever...');
+
+    // 3. O "Maestro" (Ensemble Retriever) que combina os dois resultados
+    const ensembleRetriever = new EnsembleRetriever({
+        retrievers: [bm25Retriever, vectorStoreRetriever],
+        weights: [0.5, 0.5], // Damos 50% de importância para a busca de keyword e 50% para a busca semântica.
+    });
+
+    console.log(`[RAG Engine] Indexação HÍBRIDA concluída. ${splits.length} pedaços de texto carregados na memória.`);
+
+    // A função agora retorna o "maestro", que é muito mais inteligente.
+    return ensembleRetriever;
 
   } catch (error) {
     console.error('[RAG Engine] Falha ao inicializar a base de conhecimento:', error);
