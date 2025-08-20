@@ -1,35 +1,36 @@
 # Fonte
 Documento: IT 01_2021 CBMAL - Procedimentos Administrativos - Parte 2 - Classificação das edificações.pdf
-Localização: Página 15, Tabela 6F(1)
+Localização: Página 26, Tabela 6G(3)
 
-| Grupo de ocupação e uso | GRUPO F – REUNIÃO DE PÚBLICO |
+| Grupo de ocupação e uso | GRUPO G – SERVIÇOS AUTOMOTIVOS E ASSEMELHADOS |
 |---|---|
-| Divisão | F-1 (museus) |
+| Divisão | G-4 (oficinas...) |
 | Medidas de Segurança contra Incêndio | Classificação quanto à altura (em metros) |
 |  | Térrea | H ≤ 6 | 6 < H ≤ 12 | 12 < H ≤ 23 | 23 < H ≤ 30 | Acima de 30 |
 | Acesso de Viatura na Edificação | X | X | X | X | X | X |
 | Segurança Estrutural contra Incêndio | X | X | X | X | X | X |
-| Compartimentação Vertical | - | - | - | X1 | X2 | X3 |
+| Compartimentação horizontal ou de áreas6 | X1 | X1 | X1 | X1 | X1 | X |
+| Compartimentação Vertical | - | - | - | X2 | X2 | X2 |
 | Controle de Materiais de Acabamento | X | X | X | X | X | X |
-| Saídas de Emergência | X | X | X | X | X | X |
-| Gerenciamento de Risco de incêndio | X4 | X4 | X4 | X4 | X4 | X4 |
-| Brigada de Incêndio6 | X | X | X | X | X | X |
+| Saídas de Emergência | X | X | X | X | X | X3 |
+| Brigada de Incêndio7 | X | X | X | X | X | X |
 | Iluminação de Emergência | X | X | X | X | X | X |
-| Detecção de incêndio | X | X | X | X | X | X |
-| Alarme de Incêndio | X | X | X | X | X | X |
+| Detecção de incêndio | - | - | - | - | - | X |
+| Alarme de Incêndio | X4 | X4 | X4 | X4 | X4 | X4 |
 | Sinalização de Emergência | X | X | X | X | X | X |
 | Extintores | X | X | X | X | X | X |
 | Hidrante e Mangotinhos | X | X | X | X | X | X |
-| Chuveiros automáticos | - | - | - | - | - | X |
+| Chuveiros automáticos | - | - | - | - | X | X |
 | Controle de Fumaça | - | - | - | - | - | X5 |
 
 **NOTAS ESPECÍFICAS:**
-1 – Pode ser substituída por sistema de chuveiros automáticos, exceto para as compartimentações das fachadas e selagens dos shafts e dutos de instalações;
-2 – Pode ser substituída por sistema de controle de fumaça, detecção de incêndio e chuveiros automáticos, exceto para as compartimentações das fachadas e selagens dos shafts e dutos de instalações;
-3 – Pode ser substituída por sistema de controle de fumaça, detecção de incêndio e chuveiros automáticos até 90m de altura, exceto para as compartimentações das fachadas e selagens dos shafts e dutos de instalações;
-4 – Somente para locais com público acima de 1000 pessoas;
-5 – Acima de 90 metros de altura, conforme critérios da IT-15;
-6 – Incluir Bombeiro Civil conforme Lei Estadual 7.410.
+1 – Pode ser substituído por sistema de chuveiros automáticos;
+2 – Exigido para as compartimentações das fachadas e selagens dos shafts e dutos de instalações;
+3 – Deve haver Elevador de Emergência para altura maior que 60 m;
+4 – Deve haver pelo menos um acionador manual, por pavimento, a no máximo 5m da saída de emergência;
+5 – Acima de 90 metros de altura conforme critérios da IT-15, sendo dispensado caso a edificação seja aberta lateralmente;
+6 – A área máxima de compartimentação deve abranger as áreas dos pavimentos e mezaninos interligados sem compartimentação;
+7 – Incluir Bombeiro Civil conforme Lei Estadual 7.410.
 
 **NOTAS GERAIS:**
 a – As instalações elétricas, o SPDA e o controle das fontes de ignição devem estar em conformidade com as normas técnicas oficiais;

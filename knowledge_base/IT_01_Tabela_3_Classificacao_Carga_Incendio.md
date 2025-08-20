@@ -1,5 +1,9 @@
 # Fonte
-Documento: IT_01_2021_CBMBAL.pdf
-Localização: Tabela 3 - Classificação das edificações e áreas de risco quanto à carga de incêndio
+Documento: IT 01_2021 CBMAL - Procedimentos Administrativos - Parte 2 - Classificação das edificações.pdf
+Localização: Página 8, Tabela 3
 
-Tabela convertida em Markdown.
+| Potencial de risco | Carga de incêndio em MJ/m² |
+|---|---|
+| Baixo | Até 300 MJ/m² |
+| Médio | Acima 300 até 1.200 MJ/m² |
+| Alto | Acima de 1.200 MJ/m² |
