@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
+import { createVectorStore } from './rag-engine.js';
 
 dotenv.config();
 
@@ -15,10 +16,6 @@ const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.GEMINI_API_KEY;
 const API_MODEL = 'gemini-2.5-flash-preview-05-20';
 
-const RETRIEVER_HOST = process.env.RETRIEVER_HOST || 'localhost';
-const RETRIEVER_PORT = process.env.RETRIEVER_PORT || '5000';
-const RETRIEVER_SERVICE_URL = `http://${RETRIEVER_HOST}:${RETRIEVER_PORT}`;
-
 if (!API_KEY) {
   console.error('[ERRO CRÍTICO] Variável de ambiente GEMINI_API_KEY não definida.');
   process.exit(1);
@@ -26,7 +23,7 @@ if (!API_KEY) {
 
 const SYSTEM_PROMPT = `
 // -----------------------------------------------------------------------------
-// PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL (Versão 3.0 com Busca Guiada)
+// PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL
 // -----------------------------------------------------------------------------
 
 /*
@@ -66,7 +63,10 @@ const SYSTEM_PROMPT = `
     - Ao iniciar uma nova conversa, sua primeira mensagem deve ser:
     > "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
 */
+
 `;
+
+let vectorStore;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -78,39 +78,32 @@ app.post('/api/generate', async (req, res) => {
     return res.status(400).json({ error: 'O histórico da conversa é obrigatório.' });
   }
 
+  // --- INÍCIO DA CORREÇÃO ---
+  // Se for a primeira mensagem (histórico vazio), retorna a saudação diretamente.
+  if (history.length === 0) {
+    const initialMessage = "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos.";
+    return res.json({ reply: initialMessage });
+  }
+  // --- FIM DA CORREÇÃO ---
+
   try {
-    const isInitialMessage = history.length === 0;
     let context = "";
 
-    if (!isInitialMessage) {
+    if (vectorStore) {
         const textQuery = history[history.length - 1]?.parts[0]?.text || '';
-        
-        if (!process.env.RETRIEVER_HOST) {
-            throw new Error("A URL do serviço de busca (RETRIEVER_HOST) não está definida.");
-        }
-        
-        console.log(`[Server JS] Enviando query '${textQuery}' para ${RETRIEVER_SERVICE_URL}/buscar`);
-        const retrieverResponse = await fetch(`${RETRIEVER_SERVICE_URL}/buscar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: textQuery })
-        });
-
-        if (!retrieverResponse.ok) {
-            const errorBody = await retrieverResponse.text();
-            throw new Error(`O serviço de busca falhou: ${retrieverResponse.status} - ${errorBody}`);
-        }
-        const retrieverData = await retrieverResponse.json();
-        context = retrieverData.context;
+        const retriever = vectorStore.asRetriever();
+        const contextDocs = await retriever.getRelevantDocuments(textQuery);
+        context = contextDocs.map(doc => `Nome do Arquivo Fonte: ${doc.metadata.source?.split(/[\\/]/).pop() || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
     }
     
     const contents = JSON.parse(JSON.stringify(history));
+
     const body = {
       contents: contents,
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
     };
 
-    if (!isInitialMessage && body.contents.length > 0) {
+    if (body.contents.length > 0) {
         body.contents[body.contents.length - 1].parts.unshift({ text: `\nCONTEXTO DA BASE DE CONHECIMENTO:\n${context}\n---\n` });
     }
 
@@ -145,7 +138,11 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
+async function startServer() {
+  vectorStore = await createVectorStore();
+  app.listen(PORT, () => {
     console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
-});
+  });
+}
 
+startServer();
