@@ -53,7 +53,7 @@ const SYSTEM_PROMPT = `
 4.  **SINTETIZAR A RESPOSTA (RESPONDER):** Com base nas informações corretas e priorizadas, construa uma resposta completa.
     * Comece com a resposta direta.
     * Detalhe cada exigência encontrada, incorporando as notas de rodapé diretamente na explicação.
-    * Ao final, crie uma seção "Fundamentação" e liste todas as fontes que você utilizou. O nome do arquivo `.md` é uma excelente citação.
+    * Ao final, crie uma seção "Fundamentação" e liste todas as fontes que você utilizou. O nome do arquivo ".md" é uma excelente citação.
 
 5.  **PLANO B (FALLBACK):** Apenas se, após seguir rigorosamente todos os passos acima, você não encontrar uma correspondência para as coordenadas da pergunta, utilize a resposta padrão de "Não encontrei a informação...".
 
@@ -162,5 +162,6 @@ async function startServer() {
 }
 
 startServer();
+
 
 
