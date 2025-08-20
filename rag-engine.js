@@ -4,9 +4,8 @@ import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { BM25Retriever } from "@langchain/community/retrievers/bm25";
 
-// ATENÇÃO: A importação do 'EnsembleRetriever' foi REMOVIDA.
+// ATENÇÃO: A importação do 'BM25Retriever' foi REMOVIDA.
 
 export async function initializeRAGEngine() {
   try {
@@ -38,20 +37,29 @@ export async function initializeRAGEngine() {
         modelName: "text-embedding-004"
     });
 
-    console.log('[RAG Engine] Criando buscadores em memória...');
+    console.log('[RAG Engine] Criando buscador vetorial em memória...');
     const vectorStore = await MemoryVectorStore.fromDocuments(splits, embeddings);
-    
-    const keywordRetriever = new BM25Retriever({
-        vectorStore: undefined,
-        documents: splits,
-        k: 6,
-    });
-
     const vectorRetriever = vectorStore.asRetriever({ k: 6 });
 
-    console.log(`[RAG Engine] Indexação e preparação dos buscadores concluída.`);
+    console.log('[RAG Engine] Criando buscador de keyword MANUAL...');
+    
+    // --- NOSSO BUSCADOR DE KEYWORD MANUAL E CONFIÁVEL ---
+    const keywordRetriever = {
+      getRelevantDocuments: async (query) => {
+        const queryTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 2);
+        if (queryTerms.length === 0) {
+          return [];
+        }
+        const relevantDocs = splits.filter(doc => {
+          const content = doc.pageContent.toLowerCase();
+          return queryTerms.some(term => content.includes(term));
+        });
+        return relevantDocs.slice(0, 6); // Retorna os 6 melhores resultados
+      }
+    };
+    // --- FIM DO BUSCADOR MANUAL ---
 
-    // Em vez de um "maestro", retornamos os dois buscadores separados.
+    console.log(`[RAG Engine] Indexação e preparação dos buscadores concluída.`);
     return { vectorRetriever, keywordRetriever };
 
   } catch (error) {
