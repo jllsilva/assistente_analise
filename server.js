@@ -25,7 +25,7 @@ const SYSTEM_PROMPT = `
 // -----------------------------------------------------------------------------
 // PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL
 // -----------------------------------------------------------------------------
-
+// ... (O seu prompt de sistema continua o mesmo de antes, não precisa mudar)
 /*
 ## PERFIL E DIRETRIZES GERAIS
 
@@ -65,7 +65,7 @@ const SYSTEM_PROMPT = `
 */
 `;
 
-let ragRetriever;
+let retrievers;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -85,8 +85,19 @@ app.post('/api/generate', async (req, res) => {
     const lastUserMessage = history[history.length - 1] || { parts: [] };
     const textQuery = lastUserMessage.parts.find(p => p.text)?.text || '';
 
-    const contextDocs = await ragRetriever.getRelevantDocuments(textQuery);
-    const context = contextDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+    // --- NOVA LÓGICA DE BUSCA HÍBRIDA MANUAL ---
+    const vectorResults = await retrievers.vectorRetriever.getRelevantDocuments(textQuery);
+    const keywordResults = await retrievers.keywordRetriever.getRelevantDocuments(textQuery);
+
+    // Juntamos os resultados dos dois buscadores
+    const allResults = [...vectorResults, ...keywordResults];
+
+    // Removemos duplicatas para não enviar informação repetida para a IA
+    const uniqueDocs = Array.from(new Set(allResults.map(doc => doc.pageContent)))
+      .map(content => allResults.find(doc => doc.pageContent === content));
+
+    const context = uniqueDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+    // --- FIM DA NOVA LÓGICA ---
 
     const fullHistory = [...history];
 
@@ -155,11 +166,10 @@ app.get('*', (req, res) => {
 });
 
 async function startServer() {
-  ragRetriever = await initializeRAGEngine();
+  retrievers = await initializeRAGEngine(); // A variável agora se chama 'retrievers' (plural)
   app.listen(PORT, () => {
     console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
   });
 }
 
 startServer();
-
