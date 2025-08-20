@@ -14,15 +14,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.GEMINI_API_KEY;
 const API_MODEL = 'gemini-2.5-flash-preview-05-20';
-// Este endereço será fornecido automaticamente pelo Render
-const RETRIEVER_SERVICE_URL = process.env.RETRIEVER_URL;
+
+const RETRIEVER_HOST = process.env.RETRIEVER_HOST || 'localhost';
+const RETRIEVER_PORT = process.env.RETRIEVER_PORT || '5000';
+const RETRIEVER_SERVICE_URL = `http://${RETRIEVER_HOST}:${RETRIEVER_PORT}`;
 
 if (!API_KEY) {
   console.error('[ERRO CRÍTICO] Variável de ambiente GEMINI_API_KEY não definida.');
   process.exit(1);
 }
 
-// PROMPT COMPLETO E CORRIGIDO
 const SYSTEM_PROMPT = `
 // -----------------------------------------------------------------------------
 // PROMPT DO SISTEMA: Assistente Técnico da DAT - CBMAL (Versão 3.0 com Busca Guiada)
@@ -85,8 +86,8 @@ app.post('/api/generate', async (req, res) => {
     if (!isInitialMessage) {
         const textQuery = history[history.length - 1]?.parts[0]?.text || '';
         
-        if (!RETRIEVER_SERVICE_URL) {
-            throw new Error("A URL do serviço de busca (RETRIEVER_URL) não está definida.");
+        if (!process.env.RETRIEVER_HOST) {
+            throw new Error("A URL do serviço de busca (RETRIEVER_HOST) não está definida.");
         }
         
         console.log(`[Server JS] Enviando query '${textQuery}' para ${RETRIEVER_SERVICE_URL}/buscar`);
