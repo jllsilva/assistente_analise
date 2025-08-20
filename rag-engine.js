@@ -6,7 +6,7 @@ import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { BM25Retriever } from "@langchain/community/retrievers/bm25";
 
-// NOTE: REMOVEMOS A IMPORTAÇÃO DO 'EnsembleRetriever'
+// ATENÇÃO: A importação do 'EnsembleRetriever' foi REMOVIDA.
 
 export async function initializeRAGEngine() {
   try {
@@ -23,7 +23,6 @@ export async function initializeRAGEngine() {
 
     if (docs.length === 0) {
       console.log('[RAG Engine] Nenhum documento encontrado.');
-      // Retornamos retrievers vazios para evitar erros no servidor
       const emptyRetriever = { getRelevantDocuments: async () => [] };
       return { vectorRetriever: emptyRetriever, keywordRetriever: emptyRetriever };
     }
@@ -52,7 +51,7 @@ export async function initializeRAGEngine() {
 
     console.log(`[RAG Engine] Indexação e preparação dos buscadores concluída.`);
 
-    // Agora, em vez de um "maestro", retornamos os dois buscadores separados.
+    // Em vez de um "maestro", retornamos os dois buscadores separados.
     return { vectorRetriever, keywordRetriever };
 
   } catch (error) {
