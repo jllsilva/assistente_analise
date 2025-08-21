@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.GEMINI_API_KEY;
-const API_MODEL = 'gemini-1.5-flash-latest';
+const API_MODEL = 'gemini-2.5-flash';
 
 if (!API_KEY) {
   console.error('[ERRO CRÍTICO] Variável de ambiente GEMINI_API_KEY não definida.');
@@ -155,6 +155,7 @@ async function startServer() {
 }
 
 startServer();
+
 
 
 
