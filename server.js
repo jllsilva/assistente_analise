@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.GEMINI_API_KEY;
+// --- MODELO ATUALIZADO PARA A VERSÃO CORRETA SOLICITADA ---
 const API_MODEL = 'gemini-2.5-flash';
 
 if (!API_KEY) {
@@ -41,7 +42,7 @@ Seu processo de pensamento para responder DEVE seguir esta ordem rigorosa:
 - **Tom:** Aja como um especialista prestativo e confiante. NÃO narre seu fluxo de raciocínio ("Passo 1...").
 - **Se Faltarem Dados:** Inicie sua resposta pedindo as informações que faltam (Área e Altura). Em seguida, você DEVE fornecer a classificação provisória que você encontrou no Passo 1. Exemplo de resposta ideal: "Para determinar as exigências completas para uma loja de motos com oficina, preciso que me informe a área construída e a altura da edificação. A princípio, com base na IT 01, essa atividade se enquadra no Grupo G - Serviços Automotivos ¹."
 - **Citações:** Use números superescritos (¹, ², ³).
-- **Fundamentação:** Esta seção deve conter APENAS as fontes exatas que você usou. **Formate as fontes como uma lista numerada.**
+- **Fundamentação:** Esta seção deve conter APENAS as fontes exatas que você usou, como o nome do arquivo .md. NUNCA escreva suposições, "presunções" ou explicações do seu raciocínio nesta seção.
 - **PROIBIÇÃO ABSOLUTA:** É terminantemente proibido "supor", "chutar" ou "dar um palpite" sobre uma classificação. Se a sua base de conhecimento não contiver uma classificação clara para a atividade perguntada, sua resposta DEVE ser: "Não encontrei uma classificação exata para esta atividade na base de conhecimento. Para prosseguir, por favor, informe o Grupo e a Divisão que você considera aplicável."
 */
 `;
@@ -68,7 +69,8 @@ app.post('/api/generate', async (req, res) => {
   }
 
   try {
-    const textQuery = history.length > 0 ? history[history.length - 1].parts[0].text : '';
+    const lastUserMessage = history.length > 0 ? history[history.length - 1] : { parts: [] };
+    const textQuery = lastUserMessage.parts.find(p => p.text)?.text || '';
 
     let context = '';
     if (textQuery) {
@@ -79,15 +81,13 @@ app.post('/api/generate', async (req, res) => {
         context = uniqueDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
     }
     
-    let contentsForApi;
+    const contents = [...history];
 
     if (history.length === 0) {
-        contentsForApi = [{ role: 'user', parts: [{ text: GREETING_PROMPT }] }];
+        contents.push({ role: 'user', parts: [{ text: GREETING_PROMPT }] });
     } else {
-        const allButLast = history.slice(0, -1);
-        contentsForApi = [
-            ...allButLast,
-            { role: 'user', parts: [{ text: `
+        const lastMessage = contents[contents.length - 1];
+        const enrichedText = `
 DOCUMENTAÇÃO TÉCNICA RELEVANTE (ITs e CTs):
 ${context}
 ---
@@ -96,12 +96,12 @@ ${CORE_RULES_PROMPT}
 ---
 DÚVIDA DO ANALISTA:
 ${textQuery}
-` }] }
-        ];
+`;
+        lastMessage.parts[0].text = enrichedText;
     }
 
     const body = {
-        contents: contentsForApi,
+        contents: contents,
     };
     
     const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
