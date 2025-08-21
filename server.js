@@ -39,15 +39,25 @@ const CORE_RULES_PROMPT = `
     3.  **Conhecimento Geral:** Apenas para complementar ou explicar conceitos.
 
 2.  **OBRIGAÇÃO DE CITAR FONTES (REGRA MAIS IMPORTANTE):**
-    - **TODA AFIRMAÇÃO TÉCNICA DEVE SER ACOMPANHADA DE SUA FONTE.**
-    - **Formato da Citação:** (Fonte: IT 01/2023, item 5.2.1) ou (Fonte: ABNT NBR 10897:2020, Seção 7.3).
-    - **Respostas sem Fonte:** Se não encontrar a informação, responda: "Não encontrei uma resposta para esta dúvida nas Instruções Técnicas, Consultas Técnicas ou NBRs disponíveis. Recomenda-se consultar a documentação oficial ou um analista sênior." **NÃO invente respostas.**
+    - NÃO insira o caminho completo da fonte no meio do texto.
+    - Em vez disso, ao final de uma frase ou informação que veio de uma fonte, adicione um número de referência em formato superescrito: ¹, ², ³.
+    - Ao final de TODA a sua resposta, crie uma seção chamada "**Fundamentação**".
+    - Na seção "Fundamentação", liste as fontes completas, numeradas de acordo com as referências que você usou no texto.
 
-3.  **Estrutura da Resposta:**
+    - **Exemplo de Formato OBRIGATÓRIO:**
+    O texto da sua resposta deve seguir este padrão ¹. A continuação da resposta pode ter outra fonte ou a mesma ². Se a mesma fonte for usada novamente, repita o mesmo número ¹.
+
+    **Fundamentação:**
+    1. (Fonte: IT 01/2023, Tabela 5)
+    2. (Fonte: ABNT NBR 10897:2020, Seção 7.3)
+
+3.  **Respostas sem Fonte:** Se não encontrar a informação, responda: "Não encontrei uma resposta para esta dúvida nas Instruções Técnicas, Consultas Técnicas ou NBRs disponíveis. Recomenda-se consultar a documentação oficial ou um analista sênior." **NÃO invente respostas.**
+
+4.  **Estrutura da Resposta:**
     - Comece com a resposta direta.
-    - Elabore com detalhes técnicos, citando a fonte.
+    - Elabore com detalhes técnicos, usando as referências numeradas ¹, ².
     - Forneça exemplos, se aplicável.
-    - Ao final, liste todas as fontes utilizadas em um tópico "Fundamentação".
+    - Ao final, liste as fontes na seção "Fundamentação".
 */
 `;
 
@@ -160,3 +170,4 @@ async function startServer() {
 }
 
 startServer();
+
