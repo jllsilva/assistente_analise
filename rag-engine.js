@@ -1,11 +1,10 @@
 import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+import { TextLoader } from "langchain/document_loaders/fs/text"; // <-- NOVA IMPORTAÇÃO
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-
-// ATENÇÃO: A importação do 'BM25Retriever' foi REMOVIDA.
 
 export async function initializeRAGEngine() {
   try {
@@ -14,6 +13,8 @@ export async function initializeRAGEngine() {
     const loader = new DirectoryLoader(
       './knowledge_base',
       {
+        // ADICIONAMOS O SUPORTE PARA ARQUIVOS .MD AQUI
+        '.md': (path) => new TextLoader(path),
         '.pdf': (path) => new PDFLoader(path, { splitPages: true }),
         '.docx': (path) => new DocxLoader(path),
       }
@@ -37,13 +38,12 @@ export async function initializeRAGEngine() {
         modelName: "text-embedding-004"
     });
 
-    console.log('[RAG Engine] Criando buscador vetorial em memória...');
+    console.log('[RAG Engine] Criando buscadores em memória...');
     const vectorStore = await MemoryVectorStore.fromDocuments(splits, embeddings);
     const vectorRetriever = vectorStore.asRetriever({ k: 6 });
 
     console.log('[RAG Engine] Criando buscador de keyword MANUAL...');
     
-    // --- NOSSO BUSCADOR DE KEYWORD MANUAL E CONFIÁVEL ---
     const keywordRetriever = {
       getRelevantDocuments: async (query) => {
         const queryTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 2);
@@ -54,10 +54,9 @@ export async function initializeRAGEngine() {
           const content = doc.pageContent.toLowerCase();
           return queryTerms.some(term => content.includes(term));
         });
-        return relevantDocs.slice(0, 6); // Retorna os 6 melhores resultados
+        return relevantDocs.slice(0, 6);
       }
     };
-    // --- FIM DO BUSCADOR MANUAL ---
 
     console.log(`[RAG Engine] Indexação e preparação dos buscadores concluída.`);
     return { vectorRetriever, keywordRetriever };
