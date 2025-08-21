@@ -1,7 +1,7 @@
 import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import { TextLoader } from "langchain/document_loaders/fs/text"; // <-- NOVA IMPORTAÇÃO
+import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
@@ -13,10 +13,11 @@ export async function initializeRAGEngine() {
     const loader = new DirectoryLoader(
       './knowledge_base',
       {
-        // ADICIONAMOS O SUPORTE PARA ARQUIVOS .MD AQUI
+        // ADICIONAMOS O SUPORTE PARA ARQUIVOS .doc AQUI
+        '.doc': (path) => new DocxLoader(path),
+        '.docx': (path) => new DocxLoader(path),
         '.md': (path) => new TextLoader(path),
         '.pdf': (path) => new PDFLoader(path, { splitPages: true }),
-        '.docx': (path) => new DocxLoader(path),
       }
     );
     const docs = await loader.load();
