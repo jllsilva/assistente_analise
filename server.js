@@ -43,24 +43,11 @@ Seu processo de pensamento para responder DEVE seguir esta ordem rigorosa:
 - **Citações:** Use números superescritos (¹, ², ³).
 - **Fundamentação:** Esta seção deve conter APENAS as fontes exatas que você usou. **Formate as fontes como uma lista numerada.**
 - **PROIBIÇÃO ABSOLUTA:** É terminantemente proibido "supor", "chutar" ou "dar um palpite" sobre uma classificação. Se a sua base de conhecimento não contiver uma classificação clara para a atividade perguntada, sua resposta DEVE ser: "Não encontrei uma classificação exata para esta atividade na base de conhecimento. Para prosseguir, por favor, informe o Grupo e a Divisão que você considera aplicável."
-
-## REGRAS DE FONTES E HIERARQUIA
-1.  **Hierarquia de Fontes:** Você deve basear suas respostas nas seguintes fontes, nesta ordem de prioridade:
-    1.  **Base de Conhecimento Local (RAG):** Documentos fornecidos a você.
-        - **REGRA DE PRIORIDADE:** Se você encontrar informações conflitantes ou sobre o mesmo tópico (especialmente tabelas) em arquivos '.md' e em outros formatos ('.docx', '.pdf'), a informação contida no arquivo '.md' é sempre a correta e deve ser priorizada.
-    2.  **Normas Técnicas Brasileiras (NBRs):** Conhecimento que você possui sobre NBRs relevantes.
-    3.  **Conhecimento Geral:** Apenas para complementar ou explicar conceitos.
 */
 `;
 
-const GREETING_PROMPT = `
-${CORE_RULES_PROMPT}
-/*
-## Mensagem Inicial:
-- Sua primeira mensagem nesta conversa DEVE SER EXATAMENTE:
-> "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."
-*/
-`;
+// PROMPT SUPER SIMPLES APENAS PARA A SAUDAÇÃO INICIAL
+const GREETING_ONLY_PROMPT = `Você é um assistente técnico do Corpo de Bombeiros de Alagoas. Sua única tarefa é responder com a seguinte frase, e nada mais: "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."`;
 
 let retrievers;
 
@@ -79,8 +66,10 @@ app.post('/api/generate', async (req, res) => {
     let contentsForApi;
 
     if (isInitialMessage) {
-        contentsForApi = [{ role: 'user', parts: [{ text: GREETING_PROMPT }] }];
+        // Para a mensagem inicial, usamos um prompt simples e sem histórico.
+        contentsForApi = [{ role: 'user', parts: [{ text: GREETING_ONLY_PROMPT }] }];
     } else {
+        // Para mensagens subsequentes, usamos a lógica completa de RAG.
         const textQuery = history[history.length - 1].parts[0].text;
         
         const vectorResults = await retrievers.vectorRetriever.getRelevantDocuments(textQuery);
@@ -89,10 +78,7 @@ app.post('/api/generate', async (req, res) => {
         const uniqueDocs = Array.from(new Map(allResults.map(doc => [doc.pageContent, doc])).values());
         const context = uniqueDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
 
-        const allButLast = history.slice(0, -1);
-        contentsForApi = [
-            ...allButLast,
-            { role: 'user', parts: [{ text: `
+        const enrichedText = `
 DOCUMENTAÇÃO TÉCNICA RELEVANTE (ITs e CTs):
 ${context}
 ---
@@ -101,7 +87,11 @@ ${CORE_RULES_PROMPT}
 ---
 DÚVIDA DO ANALISTA:
 ${textQuery}
-` }] }
+`;
+        const allButLast = history.slice(0, -1);
+        contentsForApi = [
+            ...allButLast,
+            { role: 'user', parts: [{ text: enrichedText }] }
         ];
     }
 
