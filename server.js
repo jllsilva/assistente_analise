@@ -23,42 +23,22 @@ if (!API_KEY) {
 
 const CORE_RULES_PROMPT = `
 /*
-## PERFIL E PROCESSO MENTAL OBRIGATÓRIO
+## PERFIL E DIRETRIZES
+- **Identidade:** Você é o "Assistente Técnico da DAT", um especialista em segurança contra incêndio do CBMAL.
+- **Fontes de Verdade:** Você possui dois tipos de fontes: DADOS ESTRUTURADOS (JSON) para fatos e classificações, e DOCUMENTOS DE TEXTO para contexto e definições.
 
-- **Identidade:** Você é o "Assistente Técnico da DAT", um especialista em segurança contra incêndio do CBMAL. Sua precisão e fidelidade às fontes são absolutas.
-
-- **Processo de Raciocínio (Seu "Rascunho" Interno - NÃO EXIBIR NA RESPOSTA):**
-Para cada pergunta, você deve primeiro preencher um "bloco de raciocínio" interno para organizar os fatos. Apenas após preencher e validar este bloco você pode formular a resposta ao usuário.
-
-1.  **ANÁLISE DA ATIVIDADE:**
-    - Atividade Principal Mencionada: [ex: "restaurante", "loja de pneus com oficina"]
-
-2.  **BUSCA E EXTRAÇÃO DE DADOS DA BASE:**
-    - Consulte seus arquivos .md. Qual arquivo e qual linha contêm a classificação para essa atividade?
-    - Grupo Extraído: [Extraia o Grupo exato, ex: "F"]
-    - Divisão Extraída: [Extraia a Divisão exata, ex: "F-8"]
-    - Descrição Oficial da Divisão: [Extraia a descrição exata, ex: "Local para refeição"]
-    - Fonte da Classificação: [Cite o nome do arquivo .md exato, ex: "IT_01_Tabela_1_Classificacao_Ocupacao.md"]
-
-3.  **VALIDAÇÃO CRÍTICA INTERNA:**
-    - A "Atividade Principal Mencionada" é logicamente compatível com a "Descrição Oficial da Divisão"? (ex: "restaurante" é compatível com "local para refeição"? SIM. "hotel" é compatível com "serviço de saúde"? NÃO).
-    - Se a validação falhar, você DEVE voltar ao passo 2 e encontrar a classificação correta antes de prosseguir. É PROIBIDO apresentar uma classificação que falhe nesta validação.
-
-4.  **ANÁLISE DE EXIGÊNCIAS:**
-    - O analista forneceu Área e Altura? [SIM/NÃO].
-    - Se NÃO, a resposta final será um pedido por esses dados.
-    - Se SIM, qual Tabela de Exigências se aplica (Tabela 5 ou 6)?
-    - Fonte da Tabela de Exigências: [Cite o nome do arquivo .md exato, ex: "IT_01_Tabela_5_Area_Menor_750.md"]
-    - Lista de Exigências Extraídas: [Liste as exigências EXATAMENTE como estão na fonte, sem adicionar acrônimos ou ITs que não estão lá].
-
-## FORMATAÇÃO DA RESPOSTA FINAL AO USUÁRIO
-- Baseado APENAS nos dados validados do seu "Rascunho" Interno, formule uma resposta em texto natural e profissional.
-- NUNCA mostre o processo de raciocínio ou os passos.
-- A "Fundamentação" deve listar APENAS os arquivos exatos que você identificou como "Fonte" no seu rascunho.
+## FLUXO DE RACIOCÍNIO HÍBRIDO
+1.  **Análise da Pergunta:** Primeiro, entenda a intenção do usuário. Ele está pedindo uma classificação/exigência específica ou uma explicação/definição?
+2.  **Estratégia de Busca:**
+    - Para perguntas sobre **classificação ou exigências de tabelas** (ex: "qual o grupo de um hotel?", "exigências para F-6 com 100m²"), sua **PRIORIDADE MÁXIMA** é usar os DADOS ESTRUTURADOS (JSON) fornecidos. Eles são sua fonte de verdade para fatos.
+    - Para perguntas **conceituais ou descritivas** (ex: "o que é compartimentação?", "explique a IT-17"), sua prioridade é usar os DOCUMENTOS DE TEXTO.
+3.  **Formulação da Resposta:**
+    - Use os dados da fonte mais apropriada para construir sua resposta. Se necessário, use ambos.
+    - Se os dados JSON forem insuficientes (faltando área/altura), peça-os ao analista.
+    - Mantenha o formato de citação (¹, ²) e a seção "Fundamentação", indicando a fonte correta.
 */
 `;
 
-// PROMPT SUPER SIMPLES APENAS PARA A SAUDAÇÃO INICIAL
 const GREETING_ONLY_PROMPT = `Você é um assistente técnico do Corpo de Bombeiros de Alagoas. Sua única tarefa é responder com a seguinte frase, e nada mais: "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."`;
 
 let retrievers;
@@ -78,21 +58,23 @@ app.post('/api/generate', async (req, res) => {
     let contentsForApi;
 
     if (isInitialMessage) {
-        // Para a mensagem inicial, usamos um prompt simples e sem histórico.
         contentsForApi = [{ role: 'user', parts: [{ text: GREETING_ONLY_PROMPT }] }];
     } else {
-        // Para mensagens subsequentes, usamos a lógica completa de RAG.
         const textQuery = history[history.length - 1].parts[0].text;
         
-        const vectorResults = await retrievers.vectorRetriever.getRelevantDocuments(textQuery);
-        const keywordResults = await retrievers.keywordRetriever.getRelevantDocuments(textQuery);
-        const allResults = [...vectorResults, ...keywordResults];
-        const uniqueDocs = Array.from(new Map(allResults.map(doc => [doc.pageContent, doc])).values());
-        const context = uniqueDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+        // Realiza a busca em ambas as fontes
+        const jsonDocs = await retrievers.jsonRetriever.getRelevantDocuments(textQuery);
+        const textDocs = await retrievers.textRetriever.getRelevantDocuments(textQuery);
+
+        const jsonContext = jsonDocs.map(doc => `Fonte Estruturada (JSON): ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+        const textContext = textDocs.map(doc => `Fonte Textual: ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
 
         const enrichedText = `
-DOCUMENTAÇÃO TÉCNICA RELEVANTE (ITs e CTs):
-${context}
+DADOS ESTRUTURADOS (JSON) - Use como prioridade para classificações e exigências:
+${jsonContext}
+---
+DOCUMENTOS DE TEXTO - Use para definições e contexto:
+${textContext}
 ---
 INSTRUÇÕES DO SISTEMA (SEMPRE SIGA):
 ${CORE_RULES_PROMPT}
@@ -160,4 +142,3 @@ async function startServer() {
 }
 
 startServer();
-
