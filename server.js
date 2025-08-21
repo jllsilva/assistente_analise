@@ -79,15 +79,15 @@ app.post('/api/generate', async (req, res) => {
         context = uniqueDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
     }
     
-    // Lógica segura para construir o histórico a ser enviado para a API
     let contentsForApi;
 
     if (history.length === 0) {
-        // Para a mensagem inicial, enviamos apenas o prompt de saudação
         contentsForApi = [{ role: 'user', parts: [{ text: GREETING_PROMPT }] }];
     } else {
-        // Para mensagens subsequentes, construímos um histórico limpo sem modificar o original
-        const enrichedText = `
+        const allButLast = history.slice(0, -1);
+        contentsForApi = [
+            ...allButLast,
+            { role: 'user', parts: [{ text: `
 DOCUMENTAÇÃO TÉCNICA RELEVANTE (ITs e CTs):
 ${context}
 ---
@@ -96,12 +96,7 @@ ${CORE_RULES_PROMPT}
 ---
 DÚVIDA DO ANALISTA:
 ${textQuery}
-`;
-        // Pegamos o histórico que veio do cliente e substituímos a última mensagem pela versão enriquecida
-        const allButLast = history.slice(0, -1);
-        contentsForApi = [
-            ...allButLast,
-            { role: 'user', parts: [{ text: enrichedText }] }
+` }] }
         ];
     }
 
@@ -111,4 +106,50 @@ ${textQuery}
     
     const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
         method: 'POST',
-        headers: {
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(60000)
+    });
+
+    if (!apiResponse.ok) {
+        const errorData = await apiResponse.json();
+        throw new Error(errorData.error?.message || `API Error: ${apiResponse.status}`);
+    }
+
+    const data = await apiResponse.json();
+
+    if (!data.candidates || data.candidates.length === 0) {
+        const feedback = data.promptFeedback;
+        if (feedback && feedback.blockReason) {
+            throw new Error(`Resposta bloqueada por segurança: ${feedback.blockReason}. ${feedback.blockReasonMessage || ''}`);
+        }
+        throw new Error("A API retornou uma resposta vazia.");
+    }
+
+    const reply = data.candidates[0].content.parts[0].text;
+
+    if (reply === undefined || reply === null) {
+      throw new Error("A API retornou uma resposta válida, mas sem texto.");
+    }
+
+    console.log(`[Sucesso] Resposta da API gerada para a DAT.`);
+    return res.json({ reply });
+
+  } catch (error) {
+    console.error(`[ERRO] Falha ao gerar resposta:`, error);
+    res.status(503).json({ error: `Ocorreu um erro ao processar sua solicitação: ${error.message}` });
+  }
+});
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+async function startServer() {
+  retrievers = await initializeRAGEngine();
+  app.listen(PORT, () => {
+    console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
+  });
+}
+
+startServer();
