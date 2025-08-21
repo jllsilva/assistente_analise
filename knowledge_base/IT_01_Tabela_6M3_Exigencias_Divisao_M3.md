@@ -1,0 +1,102 @@
+# Fonte
+Documento: IT 01_2021 CBMAL - Procedimentos Administrativos - Parte 2 - Classificação das edificações.pdf
+Localização: Página 43, Tabela 6M(3)
+
+**Ocupação:** GRUPO M – ESPECIAL (M-3 (centrais de comunicação))
+
+- **Critério:** Térrea
+  - **Exigência:** Acesso de Viatura na Edificação é **Exigido**.
+  - **Exigência:** Segurança Estrutural contra Incêndio é **Exigido**.
+  - **Exigência:** Compartimentação horizontal e de áreas é **Exigido** (Nota: A área máxima de compartimentação deve abranger as áreas dos pavimentos e mezaninos interligados sem compartimentação).
+  - **Exigência:** Controle de Materiais de Acabamento é **Exigido**.
+  - **Exigência:** Saídas de Emergência é **Exigido**.
+  - **Exigência:** Brigada de Incêndio é **Exigido** (Nota: Incluir Bombeiro Civil conforme Lei Estadual 7.410).
+  - **Exigência:** Iluminação de Emergência é **Exigido**.
+  - **Exigência:** Alarme de Incêndio é **Exigido**.
+  - **Exigência:** Sinalização de Emergência é **Exigido**.
+  - **Exigência:** Extintores é **Exigido**.
+  - **Exigência:** Hidrante e Mangotinhos é **Exigido**.
+
+- **Critério:** H ≤ 6
+  - **Exigência:** Acesso de Viatura na Edificação é **Exigido**.
+  - **Exigência:** Segurança Estrutural contra Incêndio é **Exigido**.
+  - **Exigência:** Compartimentação horizontal e de áreas é **Exigido** (Nota: A área máxima de compartimentação deve abranger as áreas dos pavimentos e mezaninos interligados sem compartimentação).
+  - **Exigência:** Controle de Materiais de Acabamento é **Exigido**.
+  - **Exigência:** Saídas de Emergência é **Exigido**.
+  - **Exigência:** Brigada de Incêndio é **Exigido** (Nota: Incluir Bombeiro Civil conforme Lei Estadual 7.410).
+  - **Exigência:** Iluminação de Emergência é **Exigido**.
+  - **Exigência:** Alarme de Incêndio é **Exigido**.
+  - **Exigência:** Sinalização de Emergência é **Exigido**.
+  - **Exigência:** Extintores é **Exigido**.
+  - **Exigência:** Hidrante e Mangotinhos é **Exigido**.
+
+- **Critério:** 6 < H ≤ 12
+  - **Exigência:** Acesso de Viatura na Edificação é **Exigido**.
+  - **Exigência:** Segurança Estrutural contra Incêndio é **Exigido**.
+  - **Exigência:** Compartimentação horizontal e de áreas é **Exigido** (Nota: A área máxima de compartimentação deve abranger as áreas dos pavimentos e mezaninos interligados sem compartimentação).
+  - **Exigência:** Controle de Materiais de Acabamento é **Exigido**.
+  - **Exigência:** Saídas de Emergência é **Exigido**.
+  - **Exigência:** Brigada de Incêndio é **Exigido** (Nota: Incluir Bombeiro Civil conforme Lei Estadual 7.410).
+  - **Exigência:** Iluminação de Emergência é **Exigido**.
+  - **Exigência:** Detecção de incêndio é **Exigido**.
+  - **Exigência:** Alarme de Incêndio é **Exigido**.
+  - **Exigência:** Sinalização de Emergência é **Exigido**.
+  - **Exigência:** Extintores é **Exigido**.
+  - **Exigência:** Hidrante e Mangotinhos é **Exigido**.
+
+- **Critério:** 12 < H ≤ 23
+  - **Exigência:** Acesso de Viatura na Edificação é **Exigido**.
+  - **Exigência:** Segurança Estrutural contra Incêndio é **Exigido**.
+  - **Exigência:** Compartimentação horizontal e de áreas é **Exigido** (Nota: A área máxima de compartimentação deve abranger as áreas dos pavimentos e mezaninos interligados sem compartimentação).
+  - **Exigência:** Compartimentação Vertical é **Exigido**.
+  - **Exigência:** Controle de Materiais de Acabamento é **Exigido**.
+  - **Exigência:** Saídas de Emergência é **Exigido**.
+  - **Exigência:** Gerenciamento de Risco de incêndio é **Exigido**.
+  - **Exigência:** Brigada de Incêndio é **Exigido** (Nota: Incluir Bombeiro Civil conforme Lei Estadual 7.410).
+  - **Exigência:** Iluminação de Emergência é **Exigido**.
+  - **Exigência:** Detecção de incêndio é **Exigido**.
+  - **Exigência:** Alarme de Incêndio é **Exigido**.
+  - **Exigência:** Sinalização de Emergência é **Exigido**.
+  - **Exigência:** Extintores é **Exigido**.
+  - **Exigência:** Hidrante e Mangotinhos é **Exigido**.
+  - **Exigência:** Chuveiros automáticos é **Exigido** (Nota: O sistema de chuveiros automáticos pode ser substituído por sistema de gases, através de supressão total do ambiente).
+
+- **Critério:** 23 < H ≤ 30
+  - **Exigência:** Acesso de Viatura na Edificação é **Exigido**.
+  - **Exigência:** Segurança Estrutural contra Incêndio é **Exigido**.
+  - **Exigência:** Compartimentação horizontal e de áreas é **Exigido** (Nota: A área máxima de compartimentação deve abranger as áreas dos pavimentos e mezaninos interligados sem compartimentação).
+  - **Exigência:** Compartimentação Vertical é **Exigido**.
+  - **Exigência:** Controle de Materiais de Acabamento é **Exigido**.
+  - **Exigência:** Saídas de Emergência é **Exigido**.
+  - **Exigência:** Gerenciamento de Risco de incêndio é **Exigido**.
+  - **Exigência:** Brigada de Incêndio é **Exigido** (Nota: Incluir Bombeiro Civil conforme Lei Estadual 7.410).
+  - **Exigência:** Iluminação de Emergência é **Exigido**.
+  - **Exigência:** Detecção de incêndio é **Exigido**.
+  - **Exigência:** Alarme de Incêndio é **Exigido**.
+  - **Exigência:** Sinalização de Emergência é **Exigido**.
+  - **Exigência:** Extintores é **Exigido**.
+  - **Exigência:** Hidrante e Mangotinhos é **Exigido**.
+  - **Exigência:** Chuveiros automáticos é **Exigido** (Nota: O sistema de chuveiros automáticos pode ser substituído por sistema de gases, através de supressão total do ambiente).
+
+- **Critério:** Acima de 30
+  - **Exigência:** Acesso de Viatura na Edificação é **Exigido**.
+  - **Exigência:** Segurança Estrutural contra Incêndio é **Exigido**.
+  - **Exigência:** Compartimentação horizontal e de áreas é **Exigido** (Nota: A área máxima de compartimentação deve abranger as áreas dos pavimentos e mezaninos interligados sem compartimentação).
+  - **Exigência:** Compartimentação Vertical é **Exigido**.
+  - **Exigência:** Controle de Materiais de Acabamento é **Exigido**.
+  - **Exigência:** Saídas de Emergência é **Exigido**.
+  - **Exigência:** Gerenciamento de Risco de incêndio é **Exigido**.
+  - **Exigência:** Brigada de Incêndio é **Exigido** (Nota: Incluir Bombeiro Civil conforme Lei Estadual 7.410).
+  - **Exigência:** Iluminação de Emergência é **Exigido**.
+  - **Exigência:** Detecção de incêndio é **Exigido**.
+  - **Exigência:** Alarme de Incêndio é **Exigido**.
+  - **Exigência:** Sinalização de Emergência é **Exigido**.
+  - **Exigência:** Extintores é **Exigido**.
+  - **Exigência:** Hidrante e Mangotinhos é **Exigido**.
+  - **Exigência:** Chuveiros automáticos é **Exigido**.
+
+**NOTAS GERAIS:**
+a – As instalações elétricas, o SPDA e o controle das fontes de ignição devem estar em conformidade com as normas técnicas oficiais;
+b – Os subsolos dos pavimentos devem ser compartimentados em relação aos demais pisos contíguos. Para subsolos ocupados ver Tabela 7;
+c – Observar ainda as exigências para os riscos específicos das respectivas Instruções Técnicas;
+d – Os pavimentos ocupados devem possuir aberturas para o exterior (por exemplo: janelas, painéis de vidro, etc.), ou controle de fumaça dimensionados conforme o disposto na IT-15.
