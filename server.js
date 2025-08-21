@@ -40,18 +40,12 @@ Seu processo de pensamento para responder DEVE seguir esta ordem rigorosa:
 
 - **Tom:** Aja como um especialista prestativo e confiante. NÃO narre seu fluxo de raciocínio ("Passo 1...").
 - **Se Faltarem Dados:** Inicie sua resposta pedindo as informações que faltam (Área e Altura). Em seguida, você DEVE fornecer a classificação provisória que você encontrou no Passo 1. Exemplo de resposta ideal: "Para determinar as exigências completas para uma loja de motos com oficina, preciso que me informe a área construída e a altura da edificação. A princípio, com base na IT 01, essa atividade se enquadra no Grupo G - Serviços Automotivos ¹."
-- **Citações:** Use números superescritos (¹, ², ³). A citação deve vir de uma fonte EXATA. Você não deve adicionar informações externas (como números de ITs que não estão no texto) e depois citar a fonte. CITE APENAS O QUE ESTÁ ESCRITO NA FONTE.
-- **Formato da Lista de Exigências:** Ao listar as medidas de segurança, use um formato de lista simples com marcadores (*). NÃO adicione letras (A, B, C...) ou números de ITs (IT 10, IT 17) ao lado de cada item, a menos que o documento-fonte que você está citando contenha explicitamente essa informação.
+- **Citações:** Use números superescritos (¹, ², ³).
 - **Fundamentação:** Esta seção deve conter APENAS as fontes exatas que você usou. **Formate as fontes como uma lista numerada.**
-
-    - **Exemplo:**
-    **Fundamentação:**
-    1. IT_01_Tabela_1_Classificacao_Ocupacao.md
-    2. IT_01_Tabela_5_Exigencias_Geral.md
-
 - **PROIBIÇÃO ABSOLUTA:** É terminantemente proibido "supor", "chutar" ou "dar um palpite" sobre uma classificação. Se a sua base de conhecimento não contiver uma classificação clara para a atividade perguntada, sua resposta DEVE ser: "Não encontrei uma classificação exata para esta atividade na base de conhecimento. Para prosseguir, por favor, informe o Grupo e a Divisão que você considera aplicável."
 */
 `;
+
 const GREETING_PROMPT = `
 ${CORE_RULES_PROMPT}
 /*
@@ -67,10 +61,6 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/health', (req, res) => {
-    res.status(200).send('Servidor do Assistente da DAT está ativo e saudável.');
-});
-
 app.post('/api/generate', async (req, res) => {
   const { history } = req.body;
   if (!history) {
@@ -78,8 +68,7 @@ app.post('/api/generate', async (req, res) => {
   }
 
   try {
-    const lastUserMessage = history.length > 0 ? history[history.length - 1] : { parts: [] };
-    const textQuery = lastUserMessage.parts.find(p => p.text)?.text || '';
+    const textQuery = history.length > 0 ? history[history.length - 1].parts[0].text : '';
 
     let context = '';
     if (textQuery) {
@@ -90,12 +79,14 @@ app.post('/api/generate', async (req, res) => {
         context = uniqueDocs.map(doc => `Fonte: ${doc.metadata.source || 'Base de Conhecimento'}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
     }
     
-    const contents = [...history];
+    // Lógica segura para construir o histórico a ser enviado para a API
+    let contentsForApi;
 
     if (history.length === 0) {
-        contents.push({ role: 'user', parts: [{ text: GREETING_PROMPT }] });
+        // Para a mensagem inicial, enviamos apenas o prompt de saudação
+        contentsForApi = [{ role: 'user', parts: [{ text: GREETING_PROMPT }] }];
     } else {
-        const lastMessage = contents[contents.length - 1];
+        // Para mensagens subsequentes, construímos um histórico limpo sem modificar o original
         const enrichedText = `
 DOCUMENTAÇÃO TÉCNICA RELEVANTE (ITs e CTs):
 ${context}
@@ -106,66 +97,18 @@ ${CORE_RULES_PROMPT}
 DÚVIDA DO ANALISTA:
 ${textQuery}
 `;
-        lastMessage.parts[0].text = enrichedText;
+        // Pegamos o histórico que veio do cliente e substituímos a última mensagem pela versão enriquecida
+        const allButLast = history.slice(0, -1);
+        contentsForApi = [
+            ...allButLast,
+            { role: 'user', parts: [{ text: enrichedText }] }
+        ];
     }
 
     const body = {
-        contents: contents,
+        contents: contentsForApi,
     };
     
     const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(30000)
-    });
-
-    if (!apiResponse.ok) {
-        const errorData = await apiResponse.json();
-        throw new Error(errorData.error?.message || `API Error: ${apiResponse.status}`);
-    }
-
-    const data = await apiResponse.json();
-
-    if (!data.candidates || data.candidates.length === 0) {
-        const feedback = data.promptFeedback;
-        if (feedback && feedback.blockReason) {
-            throw new Error(`Resposta bloqueada por segurança: ${feedback.blockReason}. ${feedback.blockReasonMessage || ''}`);
-        }
-        throw new Error("A API retornou uma resposta vazia.");
-    }
-
-    const reply = data.candidates[0].content.parts[0].text;
-
-    if (reply === undefined || reply === null) {
-      throw new Error("A API retornou uma resposta válida, mas sem texto.");
-    }
-
-    console.log(`[Sucesso] Resposta da API gerada para a DAT.`);
-    return res.json({ reply });
-
-  } catch (error) {
-    console.error(`[ERRO] Falha ao gerar resposta:`, error);
-    res.status(503).json({ error: `Ocorreu um erro ao processar sua solicitação: ${error.message}` });
-  }
-});
-
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-async function startServer() {
-  retrievers = await initializeRAGEngine();
-  app.listen(PORT, () => {
-    console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
-  });
-}
-
-startServer();
-
-
-
-
-
-
-
+        headers: {
