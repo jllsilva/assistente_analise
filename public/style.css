@@ -277,3 +277,35 @@ html, body {
     margin-top: 0;
     margin-bottom: 0;
 }
+
+/* --- NOVOS ESTILOS PARA ELEGÂNCIA E ORGANIZAÇÃO --- */
+
+/* 1. Troca a fonte principal para Lato */
+html, body {
+    font-family: 'Lato', sans-serif;
+}
+
+/* 2. Justifica o texto dentro dos balões de resposta e adiciona espaçamento */
+.markdown-content p {
+    text-align: justify;
+    margin-bottom: 0.75rem; /* Adiciona um espaço entre os parágrafos */
+    line-height: 1.6; /* Melhora a legibilidade */
+}
+
+/* Remove a margem do último parágrafo para não criar espaço extra no final */
+.markdown-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* 3. Melhora a aparência das listas */
+.markdown-content ul, .markdown-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+/* 4. Garante que os títulos no corpo da resposta mantenham a cor do texto principal */
+.bot .markdown-content h1,
+.bot .markdown-content h2,
+.bot .markdown-content h3 {
+    color: var(--text-main);
+}
