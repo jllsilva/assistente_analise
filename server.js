@@ -43,6 +43,13 @@ Seu processo de pensamento para responder DEVE seguir esta ordem rigorosa:
 - **Citações:** Use números superescritos (¹, ², ³).
 - **Fundamentação:** Esta seção deve conter APENAS as fontes exatas que você usou. **Formate as fontes como uma lista numerada.**
 - **PROIBIÇÃO ABSOLUTA:** É terminantemente proibido "supor", "chutar" ou "dar um palpite" sobre uma classificação. Se a sua base de conhecimento não contiver uma classificação clara para a atividade perguntada, sua resposta DEVE ser: "Não encontrei uma classificação exata para esta atividade na base de conhecimento. Para prosseguir, por favor, informe o Grupo e a Divisão que você considera aplicável."
+
+## REGRAS DE FONTES E HIERARQUIA
+1.  **Hierarquia de Fontes:** Você deve basear suas respostas nas seguintes fontes, nesta ordem de prioridade:
+    1.  **Base de Conhecimento Local (RAG):** Documentos fornecidos a você.
+        - **REGRA DE PRIORIDADE:** Se você encontrar informações conflitantes ou sobre o mesmo tópico (especialmente tabelas) em arquivos `.md` e em outros formatos (`.docx`, `.pdf`), a informação contida no arquivo **`.md` é sempre a correta e deve ser priorizada.**
+    2.  **Normas Técnicas Brasileiras (NBRs):** Conhecimento que você possui sobre NBRs relevantes.
+    3.  **Conhecimento Geral:** Apenas para complementar ou explicar conceitos.
 */
 `;
 
@@ -148,3 +155,4 @@ async function startServer() {
 }
 
 startServer();
+
