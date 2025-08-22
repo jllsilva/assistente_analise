@@ -18,20 +18,43 @@ class JSONRetriever extends BaseRetriever {
   
   async _getRelevantDocuments(query) {
     const lowerQuery = query.toLowerCase();
-    
-    // Lógica de busca na Tabela 1
+    let foundDocs = [];
+
+    // Tenta encontrar um código de grupo/divisão na pergunta (ex: "f-6", "grupo g")
+    const groupMatch = lowerQuery.match(/([a-m])-?(\d{1,2})?/i) || lowerQuery.match(/grupo\s+([a-m])/i);
+
+    // Lógica de busca na Tabela 5 de exigências
+    if (groupMatch && lowerQuery.includes("750")) {
+        const groupLetter = groupMatch[1].toUpperCase();
+        const tabela5 = this.data.tabela_5_exigencias_area_menor_igual_750;
+        const relevantRule = tabela5.regras.find(r => r.criterio.includes(`Grupo ${groupLetter}`));
+        
+        if (relevantRule) {
+            foundDocs.push({
+                pageContent: JSON.stringify(relevantRule),
+                metadata: { source: tabela5.tabela_info, tipo: 'exigencia' }
+            });
+            return foundDocs; // Retorna imediatamente se achar uma regra de exigência
+        }
+    }
+
+    // Se não for uma busca de exigência, busca na Tabela 1 de classificação
     const classificacoes = this.data.tabela_1_classificacao_ocupacao.classificacoes;
     for (const grupo of classificacoes) {
         for (const divisao of grupo.divisoes) {
             if (divisao.busca && divisao.busca.includes(lowerQuery)) {
-                return [{
+                foundDocs.push({
                     pageContent: JSON.stringify({ ...divisao, grupo: grupo.grupo, ocupacao_uso: grupo.ocupacao_uso }),
                     metadata: { source: this.data.tabela_1_classificacao_ocupacao.tabela_info, tipo: 'classificacao' }
-                }];
+                });
+                return foundDocs; // Retorna imediatamente para classificações
             }
         }
     }
-    return [];
+    
+    // Futuramente, podemos adicionar a lógica para a Tabela 6 aqui
+    
+    return foundDocs;
   }
 }
 
