@@ -41,7 +41,7 @@ export async function initializeRAGEngine() {
     // Carrega o JSON
     const jsonPath = path.resolve(process.cwd(), 'knowledge_base_json', 'knowledge_base.json');
     const jsonData = await fs.readFile(jsonPath, 'utf-8');
-    const knowledgeBaseJSON = JSON.parse(jsonData);
+    const knowledgeBaseJSON = JSON.parse(jsonData)[0]; 
 
     // Carrega os textos
     const textLoader = new DirectoryLoader('./knowledge_base_text', {
