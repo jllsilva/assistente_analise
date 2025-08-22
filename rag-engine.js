@@ -7,96 +7,62 @@ import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import { BaseRetriever } from "@langchain/core/retrievers";
 
-// Classe customizada para buscar nos dados JSON, seguindo o padrão LangChain
-class JSONRetriever extends BaseRetriever {
-  constructor(data) {
-    super();
-    this.data = data;
-  }
-  
-  async _getRelevantDocuments(query) {
-    const lowerQuery = query.toLowerCase();
-    let foundDocs = [];
-
-    // Tenta encontrar um código de grupo/divisão na pergunta (ex: "f-6", "grupo g")
-    const groupMatch = lowerQuery.match(/([a-m])-?(\d{1,2})?/i) || lowerQuery.match(/grupo\s+([a-m])/i);
-
-    // Lógica de busca na Tabela 5 de exigências
-    if (groupMatch && lowerQuery.includes("750")) {
-        const groupLetter = groupMatch[1].toUpperCase();
-        const tabela5 = this.data.tabela_5_exigencias_area_menor_igual_750;
-        const relevantRule = tabela5.regras.find(r => r.criterio.includes(`Grupo ${groupLetter}`));
-        
-        if (relevantRule) {
-            foundDocs.push({
-                pageContent: JSON.stringify(relevantRule),
-                metadata: { source: tabela5.tabela_info, tipo: 'exigencia' }
-            });
-            return foundDocs; // Retorna imediatamente se achar uma regra de exigência
-        }
-    }
-
-    // Se não for uma busca de exigência, busca na Tabela 1 de classificação
-    const classificacoes = this.data.tabela_1_classificacao_ocupacao.classificacoes;
-    for (const grupo of classificacoes) {
-        for (const divisao of grupo.divisoes) {
-            if (divisao.busca && divisao.busca.includes(lowerQuery)) {
-                foundDocs.push({
-                    pageContent: JSON.stringify({ ...divisao, grupo: grupo.grupo, ocupacao_uso: grupo.ocupacao_uso }),
-                    metadata: { source: this.data.tabela_1_classificacao_ocupacao.tabela_info, tipo: 'classificacao' }
+// Função auxiliar para encontrar a tabela de exigências correta
+function getTabelaExigencias(knowledgeBase, grupo, area, altura) {
+    // Lógica para Tabela 5
+    if (area <= 750 && altura <= 12) {
+        const tabela = knowledgeBase.tabela_5_exigencias_area_menor_igual_750;
+        const regra = tabela.regras.find(r => r.criterio.includes(grupo.charAt(0))); // Busca pela letra do grupo
+        if (regra) return { ...regra, tabela_info: tabela.tabela_info };
+    } 
+    // Lógica para Tabelas 6
+    else {
+        for (const key in knowledgeBase.tabelas_6_exigencias_area_maior_750) {
+            const tabela6 = knowledgeBase.tabelas_6_exigencias_area_maior_750[key];
+            if (tabela6.grupo_ocupacao.includes(grupo)) {
+                const regra = tabela6.regras_por_altura.find(r => {
+                    if ( (altura > 0 && altura <= 6) && (r.altura.includes("≤ 6") || r.classificacao === "Térrea") ) return true;
+                    if ( (altura > 6 && altura <= 12) && r.altura.includes("6 < H ≤ 12") ) return true;
+                    if ( (altura > 12 && altura <= 23) && r.altura.includes("12 < H ≤ 23") ) return true;
+                    if ( (altura > 23 && altura <= 30) && r.altura.includes("23 < H ≤ 30") ) return true;
+                    if ( altura > 30 && r.altura.includes("Acima de 30") ) return true;
+                    return false;
                 });
-                return foundDocs; // Retorna imediatamente para classificações
+                if (regra) return { ...regra, tabela_info: tabela6.tabela_info };
             }
         }
     }
-    
-    // Futuramente, podemos adicionar a lógica para a Tabela 6 aqui
-    
-    return foundDocs;
-  }
+    return null;
 }
 
 export async function initializeRAGEngine() {
   try {
-    // --- Braço 1: DADOS ESTRUTURADOS (JSON) ---
-    console.log('[RAG Engine] Carregando buscador JSON...');
+    // Carrega o JSON
     const jsonPath = path.resolve(process.cwd(), 'knowledge_base_json', 'knowledge_base.json');
     const jsonData = await fs.readFile(jsonPath, 'utf-8');
     const knowledgeBaseJSON = JSON.parse(jsonData);
-    const jsonRetriever = new JSONRetriever(knowledgeBaseJSON);
-    console.log(`[RAG Engine] Buscador JSON pronto.`);
 
-    // --- Braço 2: DOCUMENTOS DE TEXTO (DOCX, MD, PDF) ---
-    console.log('[RAG Engine] Carregando buscador de Texto...');
+    // Carrega os textos
     const textLoader = new DirectoryLoader('./knowledge_base_text', {
-      '.doc': (path) => new DocxLoader(path),
-      '.docx': (path) => new DocxLoader(path),
-      '.md': (path) => new TextLoader(path),
-      '.pdf': (path) => new PDFLoader(path),
+        '.doc': (path) => new DocxLoader(path),
+        '.docx': (path) => new DocxLoader(path),
+        '.md': (path) => new TextLoader(path),
     });
-    
     const textDocs = await textLoader.load();
-    let textRetriever;
+    const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 150 });
+    const splits = await textSplitter.splitDocuments(textDocs);
+    const embeddings = new GoogleGenerativeAIEmbeddings({ apiKey: process.env.GEMINI_API_KEY });
+    const vectorStore = await MemoryVectorStore.fromDocuments(splits, embeddings);
+    const textRetriever = vectorStore.asRetriever(5);
+    
+    console.log("[RAG Engine] Híbrido pronto.");
 
-    if (textDocs.length > 0) {
-        const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 150 });
-        const splits = await textSplitter.splitDocuments(textDocs);
-        const embeddings = new GoogleGenerativeAIEmbeddings({ apiKey: process.env.GEMINI_API_KEY });
-        const vectorStore = await MemoryVectorStore.fromDocuments(splits, embeddings);
-        textRetriever = vectorStore.asRetriever(5);
-        console.log(`[RAG Engine] Buscador de Texto pronto com ${splits.length} trechos.`);
-    } else {
-        console.log('[RAG Engine] Nenhum documento de texto encontrado. Buscador de texto inativo.');
-        textRetriever = { getRelevantDocuments: async () => [] };
-    }
-
-    return { jsonRetriever, textRetriever };
+    // Retorna as ferramentas para o servidor
+    return { knowledgeBaseJSON, textRetriever, getTabelaExigencias };
 
   } catch (error) {
     console.error('[RAG Engine] Erro ao inicializar motor RAG Híbrido:', error);
-    const emptyRetriever = { getRelevantDocuments: async () => [] };
-    return { jsonRetriever: emptyRetriever, textRetriever: emptyRetriever };
+    throw error;
   }
 }
