@@ -21,31 +21,82 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-const CORE_RULES_PROMPT = `
-/*
-## PERFIL E DIRETRIZES
-- **Identidade:** Você é o "Assistente Técnico da DAT", um especialista em segurança contra incêndio do CBMAL.
-- **Fontes de Verdade:** Você possui dois tipos de fontes: DADOS ESTRUTURADOS (JSON) para fatos e classificações, e DOCUMENTOS DE TEXTO para contexto e definições.
+// Prompts
+const GREETING_ONLY_PROMPT = `Sua única tarefa é responder com a seguinte frase, e nada mais: "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."`;
 
-## FLUXO DE RACIOCÍNIO HÍBRIDO
-1.  **Análise da Pergunta:** Primeiro, entenda a intenção do usuário. Ele está pedindo uma classificação/exigência específica ou uma explicação/definição?
-2.  **Estratégia de Busca:**
-    - Para perguntas sobre **classificação ou exigências de tabelas** (ex: "qual o grupo de um hotel?", "exigências para F-6 com 100m²"), sua **PRIORIDADE MÁXIMA** é usar os DADOS ESTRUTURADOS (JSON) fornecidos. Eles são sua fonte de verdade para fatos.
-    - Para perguntas **conceituais ou descritivas** (ex: "o que é compartimentação?", "explique a IT-17"), sua prioridade é usar os DOCUMENTOS DE TEXTO.
-3.  **Formulação da Resposta:**
-    - Use os dados da fonte mais apropriada para construir sua resposta. Se necessário, use ambos.
-    - Se os dados JSON forem insuficientes (faltando área/altura), peça-os ao analista.
-    - Mantenha o formato de citação (¹, ²) e a seção "Fundamentação", indicando a fonte correta.
+const QUERY_ANALYSIS_PROMPT = `
+Analise a pergunta do usuário e extraia as informações em um formato JSON.
+
+Tipos de busca possíveis: "CLASSIFICACAO", "EXIGENCIA", "DEFINICAO", "INDEFINIDO".
+
+- Use "CLASSIFICACAO" para perguntas sobre o grupo ou divisão de uma atividade.
+  - Exemplo: "classificar restaurante", "qual o grupo de um shopping?"
+  - O campo "termo" deve ser o objeto da classificação.
+
+- Use "EXIGENCIA" para perguntas sobre medidas de segurança, preventivos, ou o que é necessário para uma edificação.
+  - Sinônimos para ficar atento: "exigências", "preventivos", "medidas de segurança", "o que precisa ter", "quais os itens".
+  - Exemplo: "quais as exigências para F-6 com 750m2 e 6m", "preventivos para H-4", "o que uma borracharia precisa ter?"
+  - Extraia os campos "grupo", "divisao", "area" e "altura" se estiverem presentes.
+
+- Use "DEFINICAO" para perguntas conceituais.
+  - Exemplo: "o que é CMAR?", "explique compartimentação"
+  - O campo "termo" deve ser o conceito.
+
+- Se a intenção não for clara, retorne "tipo_busca": "INDEFINIDO".
+
+Pergunta do Usuário: "{QUERY}"
+
+JSON de Análise:
+`;
+
+const RESPONSE_GENERATION_PROMPT = `
+/*
+## PERFIL
+- Você é o "Assistente Técnico da DAT". Sua precisão e fidelidade às fontes são absolutas.
+
+## CONTEXTO FORNECIDO
+{CONTEXT}
+
+## TAREFA
+- Baseado EXCLUSIVAMENTE no CONTEXTO FORNECIDO, responda à DÚVIDA DO ANALISTA.
+- Se o contexto for uma ficha JSON de classificação, apresente os dados e peça as informações que faltam (área/altura).
+- Se o contexto for uma ficha JSON de exigências, liste as exigências de forma clara.
+- Se o contexto for um texto, use-o para responder a pergunta conceitual.
+- Se o contexto estiver vazio, responda que não encontrou informações na base de conhecimento.
+- Formate a resposta de forma profissional, com citações (¹, ²) e a seção "Fundamentação" no final, usando o campo "source" ou "tabela_info" do contexto.
+
+## DÚVIDA DO ANALISTA
+{QUERY}
 */
 `;
 
-const GREETING_ONLY_PROMPT = `Você é um assistente técnico do Corpo de Bombeiros de Alagoas. Sua única tarefa é responder com a seguinte frase, e nada mais: "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."`;
-
-let retrievers;
+let ragTools;
+let conversationState = {};
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+async function callGemini(prompt) {
+    const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(60000)
+    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error Response:", errorText);
+        throw new Error(`API Error: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content.parts) {
+        console.error("Invalid API response structure:", data);
+        throw new Error("A API retornou uma resposta inválida ou vazia.");
+    }
+    return data.candidates[0].content.parts[0].text;
+}
 
 app.post('/api/generate', async (req, res) => {
   const { history } = req.body;
@@ -54,74 +105,70 @@ app.post('/api/generate', async (req, res) => {
   }
 
   try {
-    const isInitialMessage = history.length === 0;
-    let contentsForApi;
-
-    if (isInitialMessage) {
-        contentsForApi = [{ role: 'user', parts: [{ text: GREETING_ONLY_PROMPT }] }];
-    } else {
-        const textQuery = history[history.length - 1].parts[0].text;
-        
-        // Realiza a busca em ambas as fontes
-        const jsonDocs = await retrievers.jsonRetriever.getRelevantDocuments(textQuery);
-        const textDocs = await retrievers.textRetriever.getRelevantDocuments(textQuery);
-
-        const jsonContext = jsonDocs.map(doc => `Fonte Estruturada (JSON): ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
-        const textContext = textDocs.map(doc => `Fonte Textual: ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
-
-        const enrichedText = `
-DADOS ESTRUTURADOS (JSON) - Use como prioridade para classificações e exigências:
-${jsonContext}
----
-DOCUMENTOS DE TEXTO - Use para definições e contexto:
-${textContext}
----
-INSTRUÇÕES DO SISTEMA (SEMPRE SIGA):
-${CORE_RULES_PROMPT}
----
-DÚVIDA DO ANALISTA:
-${textQuery}
-`;
-        const allButLast = history.slice(0, -1);
-        contentsForApi = [
-            ...allButLast,
-            { role: 'user', parts: [{ text: enrichedText }] }
-        ];
+    if (history.length === 0) {
+        conversationState = {}; // Limpa o estado para uma nova conversa
+        const reply = await callGemini(GREETING_ONLY_PROMPT);
+        return res.json({ reply });
     }
 
-    const body = {
-        contents: contentsForApi,
-    };
+    const textQuery = history[history.length - 1].parts[0].text;
     
-    const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(60000)
-    });
+    // FASE 1: Análise da Pergunta
+    const analysisPrompt = QUERY_ANALYSIS_PROMPT.replace('{QUERY}', textQuery);
+    let analysisResultText = await callGemini(analysisPrompt);
+    analysisResultText = analysisResultText.replace(/```json|```/g, '').trim();
+    const analysis = JSON.parse(analysisResultText);
 
-    if (!apiResponse.ok) {
-        const errorData = await apiResponse.json();
-        throw new Error(errorData.error?.message || `API Error: ${apiResponse.status}`);
-    }
-
-    const data = await apiResponse.json();
-
-    if (!data.candidates || data.candidates.length === 0) {
-        const feedback = data.promptFeedback;
-        if (feedback && feedback.blockReason) {
-            throw new Error(`Resposta bloqueada por segurança: ${feedback.blockReason}. ${feedback.blockReasonMessage || ''}`);
+    let contextDocs = [];
+    
+    // FASE 2: Busca Direcionada
+    if (analysis.tipo_busca === 'CLASSIFICACAO' && analysis.termo) {
+        const classificacoes = ragTools.knowledgeBaseJSON.tabela_1_classificacao_ocupacao.classificacoes;
+        for (const grupo of classificacoes) {
+            for (const divisao of grupo.divisoes) {
+                if (divisao.busca && divisao.busca.includes(analysis.termo.toLowerCase())) {
+                    contextDocs.push({
+                        pageContent: JSON.stringify({ ...divisao, grupo: grupo.grupo, ocupacao_uso: grupo.ocupacao_uso }),
+                        metadata: { source: ragTools.knowledgeBaseJSON.tabela_1_classificacao_ocupacao.tabela_info }
+                    });
+                    conversationState = { lastClassification: { grupo: grupo.grupo, divisao: divisao.divisao } };
+                    break;
+                }
+            }
+            if (contextDocs.length > 0) break;
         }
-        throw new Error("A API retornou uma resposta vazia.");
+    } else if (analysis.tipo_busca === 'EXIGENCIA') {
+        const grupo = analysis.grupo || conversationState.lastClassification?.grupo;
+        const area = analysis.area;
+        const altura = analysis.altura;
+
+        if (grupo && area && altura) {
+            const exigencias = ragTools.getTabelaExigencias(ragTools.knowledgeBaseJSON, grupo.charAt(0), area, altura);
+            if (exigencias) {
+                contextDocs.push({
+                    pageContent: JSON.stringify(exigencias),
+                    metadata: { source: exigencias.tabela_info }
+                });
+            }
+            conversationState = {}; // Limpa o estado após a consulta completa
+        } else {
+            // Se faltar dados, a IA pedirá mais informações
+            contextDocs = []; 
+        }
+
+    } else { // Para DEFINICAO ou INDEFINIDO, busca no texto
+        contextDocs = await ragTools.textRetriever.getRelevantDocuments(textQuery);
     }
+    
+    const context = contextDocs.map(doc => `Fonte: ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+    
+    // FASE 3: Geração da Resposta
+    const finalPrompt = RESPONSE_GENERATION_PROMPT
+        .replace('{CONTEXT}', context)
+        .replace('{QUERY}', textQuery);
+        
+    const reply = await callGemini(finalPrompt);
 
-    const reply = data.candidates[0].content.parts[0].text;
-
-    if (reply === undefined || reply === null) {
-      throw new Error("A API retornou uma resposta válida, mas sem texto.");
-    }
-
-    console.log(`[Sucesso] Resposta da API gerada para a DAT.`);
     return res.json({ reply });
 
   } catch (error) {
@@ -130,12 +177,8 @@ ${textQuery}
   }
 });
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 async function startServer() {
-  retrievers = await initializeRAGEngine();
+  ragTools = await initializeRAGEngine();
   app.listen(PORT, () => {
     console.log(`Servidor do Assistente Técnico da DAT a rodar na porta ${PORT}.`);
   });
