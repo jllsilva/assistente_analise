@@ -24,22 +24,24 @@ if (!API_KEY) {
 const CORE_RULES_PROMPT = `
 /*
 ## PERFIL E DIRETRIZES
-- **Identidade:** Você é o "Assistente Técnico da DAT". Sua função é ser um porta-voz para os dados técnicos fornecidos.
-- **Fonte da Verdade:** Sua ÚNICA fonte de informação são os dados JSON fornecidos no campo "pageContent". Esses dados são 100% corretos e pré-validados. É PROIBIDO usar conhecimento geral, fazer suposições ou alucinar informações.
-- **Tarefa Principal:** Leia a pergunta do usuário e os dados JSON no "pageContent". Use os dados para formular uma resposta clara, profissional e baseada EXCLUSIVAMENTE nos fatos fornecidos.
+- **Identidade:** Você é o "Assistente Técnico da DAT", um especialista em segurança contra incêndio do CBMAL.
+- **Fontes de Verdade:** Você possui dois tipos de fontes: DADOS ESTRUTURADOS (JSON) para fatos e classificações, e DOCUMENTOS DE TEXTO para contexto e definições.
 
-## FLUXO DE TRABALHO
-1.  **Análise dos Dados:** O "pageContent" contém uma "ficha" JSON. Analise seus campos.
-2.  **Se for uma ficha de CLASSIFICAÇÃO:** Apresente a classificação encontrada (Grupo, Divisão, Descrição) e SEMPRE peça a "área construída" e a "altura da edificação" para poder determinar as exigências.
-3.  **Se for uma ficha de EXIGÊNCIAS:** Apresente a lista de exigências de forma clara, usando bullets (*). Se uma exigência tiver uma "nota", mencione-a.
-4.  **Citações:** Use o sistema de citação (¹, ²) e a seção "Fundamentação". A fonte é o campo "metadata.source".
+## FLUXO DE RACIOCÍNIO HÍBRIDO
+1.  **Análise da Pergunta:** Primeiro, entenda a intenção do usuário. Ele está pedindo uma classificação/exigência específica ou uma explicação/definição?
+2.  **Estratégia de Busca:**
+    - Para perguntas sobre **classificação ou exigências de tabelas** (ex: "qual o grupo de um hotel?", "exigências para F-6 com 100m²"), sua **PRIORIDADE MÁXIMA** é usar os DADOS ESTRUTURADOS (JSON) fornecidos. Eles são sua fonte de verdade para fatos.
+    - Para perguntas **conceituais ou descritivas** (ex: "o que é compartimentação?", "explique a IT-17"), sua prioridade é usar os DOCUMENTOS DE TEXTO.
+3.  **Formulação da Resposta:**
+    - Use os dados da fonte mais apropriada para construir sua resposta. Se necessário, use ambos.
+    - Se os dados JSON forem insuficientes (faltando área/altura), peça-os ao analista.
+    - Mantenha o formato de citação (¹, ²) e a seção "Fundamentação", indicando a fonte correta.
 */
 `;
 
 const GREETING_ONLY_PROMPT = `Você é um assistente técnico do Corpo de Bombeiros de Alagoas. Sua única tarefa é responder com a seguinte frase, e nada mais: "Saudações, Sou o Assistente Técnico da DAT. Estou à disposição para responder suas dúvidas sobre as Instruções Técnicas, Consultas Técnicas e NBRs aplicáveis à análise de projetos."`;
 
 let retrievers;
-let conversationState = {}; // Simples gerenciador de estado em memória
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -54,40 +56,25 @@ app.post('/api/generate', async (req, res) => {
   try {
     const isInitialMessage = history.length === 0;
     let contentsForApi;
-    let contextDocs = [];
 
     if (isInitialMessage) {
-        conversationState = {}; // Limpa o estado para uma nova conversa
         contentsForApi = [{ role: 'user', parts: [{ text: GREETING_ONLY_PROMPT }] }];
     } else {
         const textQuery = history[history.length - 1].parts[0].text;
         
-        // Lógica para extrair área e altura da resposta do usuário
-        const areaMatch = textQuery.match(/(\d+)\s*m/);
-        const alturaMatch = textQuery.match(/(\d+)\s*m/);
-        const area = areaMatch ? parseInt(areaMatch[1], 10) : null;
-        const altura = alturaMatch ? parseInt(alturaMatch[1], 10) : null;
+        // Realiza a busca em ambas as fontes
+        const jsonDocs = await retrievers.jsonRetriever.getRelevantDocuments(textQuery);
+        const textDocs = await retrievers.textRetriever.getRelevantDocuments(textQuery);
 
-        if (conversationState.grupoPendente && area && altura) {
-            // Se estávamos esperando área/altura, busca pelas exigências
-            contextDocs = await retrievers.jsonRetriever.getRelevantDocuments(
-                "", { grupo: conversationState.grupoPendente, area, altura }
-            );
-            conversationState = {}; // Limpa o estado
-        } else {
-            // Senão, busca por uma nova classificação
-            contextDocs = await retrievers.jsonRetriever.getRelevantDocuments(textQuery);
-            if (contextDocs.length > 0 && contextDocs[0].metadata.tipo === 'classificacao') {
-                const classData = JSON.parse(contextDocs[0].pageContent);
-                conversationState = { grupoPendente: classData.grupo }; // Salva o grupo pendente
-            }
-        }
-        
-        const context = contextDocs.map(doc => `Fonte: ${doc.metadata.source}\nConteúdo JSON: ${doc.pageContent}`).join('\n---\n');
+        const jsonContext = jsonDocs.map(doc => `Fonte Estruturada (JSON): ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+        const textContext = textDocs.map(doc => `Fonte Textual: ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
 
         const enrichedText = `
-DADOS TÉCNICOS ESTRUTURADOS (100% CORRETOS):
-${context}
+DADOS ESTRUTURADOS (JSON) - Use como prioridade para classificações e exigências:
+${jsonContext}
+---
+DOCUMENTOS DE TEXTO - Use para definições e contexto:
+${textContext}
 ---
 INSTRUÇÕES DO SISTEMA (SEMPRE SIGA):
 ${CORE_RULES_PROMPT}
@@ -121,6 +108,10 @@ ${textQuery}
     const data = await apiResponse.json();
 
     if (!data.candidates || data.candidates.length === 0) {
+        const feedback = data.promptFeedback;
+        if (feedback && feedback.blockReason) {
+            throw new Error(`Resposta bloqueada por segurança: ${feedback.blockReason}. ${feedback.blockReasonMessage || ''}`);
+        }
         throw new Error("A API retornou uma resposta vazia.");
     }
 
