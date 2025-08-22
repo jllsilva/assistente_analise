@@ -122,21 +122,30 @@ app.post('/api/generate', async (req, res) => {
     let contextDocs = [];
     
     // FASE 2: Busca Direcionada
-    if (analysis.tipo_busca === 'CLASSIFICACAO' && analysis.termo) {
+if (analysis.tipo_busca === 'CLASSIFICACAO' && analysis.termo) {
         const classificacoes = ragTools.knowledgeBaseJSON.tabela_1_classificacao_ocupacao.classificacoes;
+        
+        // 1. Divide o termo de busca da IA em palavras-chave individuais.
+        const palavrasChave = analysis.termo.toLowerCase().split(/\s+/);
+
         for (const grupo of classificacoes) {
             for (const divisao of grupo.divisoes) {
-                if (divisao.busca && divisao.busca.includes(analysis.termo.toLowerCase())) {
-                    contextDocs.push({
-                        pageContent: JSON.stringify({ ...divisao, grupo: grupo.grupo, ocupacao_uso: grupo.ocupacao_uso }),
-                        metadata: { source: ragTools.knowledgeBaseJSON.tabela_1_classificacao_ocupacao.tabela_info }
-                    });
-                    conversationState = { lastClassification: { grupo: grupo.grupo, divisao: divisao.divisao } };
-                    break;
+                if (divisao.busca) {
+                    // 2. Verifica se ALGUMA das palavras-chave existe no campo "busca" do JSON.
+                    const encontrou = palavrasChave.some(palavra => divisao.busca.includes(palavra));
+                    if (encontrou) {
+                        contextDocs.push({
+                            pageContent: JSON.stringify({ ...divisao, grupo: grupo.grupo, ocupacao_uso: grupo.ocupacao_uso }),
+                            metadata: { source: ragTools.knowledgeBaseJSON.tabela_1_classificacao_ocupacao.tabela_info }
+                        });
+                        conversationState = { lastClassification: { grupo: grupo.grupo, divisao: divisao.divisao } };
+                        break; 
+                    }
                 }
             }
             if (contextDocs.length > 0) break;
         }
+    }
     } else if (analysis.tipo_busca === 'EXIGENCIA') {
         const grupo = analysis.grupo || conversationState.lastClassification?.grupo;
         const area = analysis.area;
@@ -185,3 +194,4 @@ async function startServer() {
 }
 
 startServer();
+
