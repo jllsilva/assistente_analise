@@ -117,21 +117,25 @@ app.post('/api/generate', async (req, res) => {
     const analysisPrompt = QUERY_ANALYSIS_PROMPT.replace('{QUERY}', textQuery);
     let analysisResultText = await callGemini(analysisPrompt);
     analysisResultText = analysisResultText.replace(/```json|```/g, '').trim();
-    const analysis = JSON.parse(analysisResultText);
+    
+    let analysis;
+    try {
+      analysis = JSON.parse(analysisResultText);
+    } catch (parseError) {
+      console.error("Erro ao fazer parse do JSON da IA, usando busca genérica:", analysisResultText);
+      analysis = { tipo_busca: "INDEFINIDO" }; // Fallback para busca de texto
+    }
 
     let contextDocs = [];
     
     // FASE 2: Busca Direcionada
-if (analysis.tipo_busca === 'CLASSIFICACAO' && analysis.termo) {
+    if (analysis.tipo_busca === 'CLASSIFICACAO' && analysis.termo) {
         const classificacoes = ragTools.knowledgeBaseJSON.tabela_1_classificacao_ocupacao.classificacoes;
-        
-        // 1. Divide o termo de busca da IA em palavras-chave individuais.
         const palavrasChave = analysis.termo.toLowerCase().split(/\s+/);
 
         for (const grupo of classificacoes) {
             for (const divisao of grupo.divisoes) {
                 if (divisao.busca) {
-                    // 2. Verifica se ALGUMA das palavras-chave existe no campo "busca" do JSON.
                     const encontrou = palavrasChave.some(palavra => divisao.busca.includes(palavra));
                     if (encontrou) {
                         contextDocs.push({
@@ -145,7 +149,6 @@ if (analysis.tipo_busca === 'CLASSIFICACAO' && analysis.termo) {
             }
             if (contextDocs.length > 0) break;
         }
-    }
     } else if (analysis.tipo_busca === 'EXIGENCIA') {
         const grupo = analysis.grupo || conversationState.lastClassification?.grupo;
         const area = analysis.area;
@@ -164,12 +167,27 @@ if (analysis.tipo_busca === 'CLASSIFICACAO' && analysis.termo) {
             // Se faltar dados, a IA pedirá mais informações
             contextDocs = []; 
         }
-
     } else { // Para DEFINICAO ou INDEFINIDO, busca no texto
         contextDocs = await ragTools.textRetriever.getRelevantDocuments(textQuery);
     }
     
     const context = contextDocs.map(doc => `Fonte: ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
+    
+    // FASE 3: Geração da Resposta
+    const finalPrompt = RESPONSE_GENERATION_PROMPT
+        .replace('{CONTEXT}', context)
+        .replace('{QUERY}', textQuery);
+        
+    const reply = await callGemini(finalPrompt);
+
+    return res.json({ reply });
+
+  } catch (error) {
+    console.error(`[ERRO] Falha ao gerar resposta:`, error);
+    res.status(503).json({ error: `Ocorreu um erro ao processar sua solicitação: ${error.message}` });
+  }
+});
+const context = contextDocs.map(doc => `Fonte: ${doc.metadata.source}\nConteúdo: ${doc.pageContent}`).join('\n---\n');
     
     // FASE 3: Geração da Resposta
     const finalPrompt = RESPONSE_GENERATION_PROMPT
@@ -194,4 +212,5 @@ async function startServer() {
 }
 
 startServer();
+
 
