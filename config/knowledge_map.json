@@ -172,5 +172,59 @@
       "knowledge_base_text/IT 06_2021 CBMAL - Acessos de viaturas.md"
     ],
     "descricao": "Estabelece os requisitos mínimos para as vias de acesso internas de uma edificação (largura, capacidade de carga, altura livre) para garantir a entrada e operação das viaturas do Corpo de Bombeiros."
+  },
+  {
+    "topico": "Separação Entre Edificações (Isolamento de Risco)",
+    "palavras_chave": [
+      "separação entre edificações",
+      "isolamento de risco",
+      "distância de segurança",
+      "parede corta-fogo",
+      "propagação de incêndio",
+      "fachada",
+      "aberturas",
+      "geminada"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 07_2021 CBMAL - Separação entre edificações.md"
+    ],
+    "descricao": "Estabelece os critérios para o isolamento de risco entre edificações, visando impedir a propagação de incêndio através de distância de segurança ou paredes corta-fogo."
+  },
+  {
+    "topico": "Segurança Estrutural e Resistência ao Fogo",
+    "palavras_chave": [
+      "segurança estrutural",
+      "resistência ao fogo",
+      "trrf",
+      "tempo requerido",
+      "colapso estrutural",
+      "viga",
+      "pilar",
+      "laje",
+      "elemento estrutural"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 08_2021 CBMAL - Resistência ao fogo dos mateirais de construção.md"
+    ],
+    "descricao": "Define o Tempo Requerido de Resistência ao Fogo (TRRF) para os elementos estruturais (vigas, pilares, lajes) a fim de evitar o colapso da edificação em um incêndio."
+  },
+  {
+    "topico": "Compartimentação Horizontal e Vertical",
+    "palavras_chave": [
+      "compartimentação",
+      "compartimentar",
+      "parede corta-fogo",
+      "porta corta-fogo",
+      "selagem",
+      "shaft",
+      "duto",
+      "propagação vertical",
+      "propagação horizontal",
+      "célula de incêndio"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 09_2021 CBMAL - Compartimentação horizontal e vertical.md"
+    ],
+    "descricao": "Estabelece os critérios para compartimentação horizontal (divisão de pavimentos em células) e vertical (vedação de aberturas entre andares) para conter a propagação de incêndio."
   }
 ]
