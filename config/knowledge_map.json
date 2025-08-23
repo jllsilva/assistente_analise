@@ -1,1 +1,176 @@
-
+[
+  {
+    "topico": "Classificação de Edificações e Exigências de Segurança",
+    "palavras_chave": [
+      "classificação",
+      "classificar",
+      "enquadra",
+      "grupo",
+      "divisão",
+      "exigências",
+      "medidas de segurança",
+      "preventivos",
+      "o que precisa",
+      "o que é exigido",
+      "altura",
+      "área",
+      "carga de incêndio"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 01_2021 CBMAL - Procedimentos Administrativos - Parte 2 - Classificação das edificações.md"
+    ],
+    "descricao": "Rota mestra do sistema. Este documento é o ponto de partida para quase todas as análises, pois define como uma edificação é classificada por ocupação, altura e carga de incêndio, e aponta para as tabelas de exigências correspondentes."
+  },
+  {
+    "topico": "Processo Simplificado",
+    "palavras_chave": [
+      "processo simplificado",
+      "simplificado",
+      "baixa complexidade",
+      "baixíssima complexidade",
+      "asbc",
+      "alvará simplificado",
+      "dispensa de licenciamento",
+      "750m²"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 02_2021 CBMAL - Processo Simplificado.md"
+    ],
+    "descricao": "Define as regras, critérios e exigências para edificações de baixa e baixíssima complexidade (até 750 m²), que se enquadram no Processo Simplificado. Determina quando um projeto pode ser dispensado do Processo Técnico completo."
+  },
+  {
+    "topico": "Eventos Temporários",
+    "palavras_chave": [
+      "evento temporário",
+      "show",
+      "festa",
+      "exposição",
+      "feira",
+      "circo",
+      "rodeio",
+      "vaquejada",
+      "trio elétrico",
+      "parque de diversão",
+      "evento de risco",
+      "laudo técnico de evento"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 03_2022 CBMAL - Eventos Temporários - Versão 2022.2.md"
+    ],
+    "descricao": "Define os critérios, classificação de risco e exigências de segurança para a realização de eventos temporários como shows, festas, feiras, circos, etc."
+  },
+  {
+    "topico": "Adaptação de Edificações Existentes",
+    "palavras_chave": [
+      "edificação existente",
+      "construção antiga",
+      "adaptação",
+      "adaptar",
+      "regularização",
+      "edifício antigo",
+      "renovação de avcb",
+      "IT 43"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 43_2021 CBMAL - Edificações existentes.md"
+    ],
+    "descricao": "Fornece as diretrizes e exigências para a adaptação e regularização de edificações construídas antes da legislação atual. É a norma a ser consultada para qualquer edificação 'existente'."
+  },
+  {
+    "topico": "Procedimentos Administrativos Gerais",
+    "palavras_chave": [
+      "procedimento",
+      "administrativo",
+      "processo",
+      "documentos",
+      "apresentação",
+      "tramitação",
+      "psc",
+      "pt",
+      "pts",
+      "alvará",
+      "avcb",
+      "accb",
+      "ascb"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 01_2021 CBMAL - Procedimentos Administrativos - Parte 1 - Aspectos Gerais.md"
+    ],
+    "descricao": "Guia inicial para a tramitação de qualquer processo no CBMAL. Define as formas de apresentação (PS, PTS, PT), os documentos necessários e os tipos de licenças emitidas."
+  },
+  {
+    "topico": "Vistorias, Fiscalização e Penalidades",
+    "palavras_chave": [
+      "vistoria",
+      "fiscalização",
+      "penalidade",
+      "sanção",
+      "multa",
+      "interdição",
+      "embargo",
+      "defesa",
+      "recurso",
+      "prazo",
+      "taacb"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 01_2021 CBMAL - Procedimentos Administrativos - Parte 3 - Vistorias.md"
+    ],
+    "descricao": "Manual de procedimentos para vistorias, fiscalizações, aplicação de sanções (multas, interdição) e o direito de defesa do cidadão. Define prazos e o Termo de Autorização para Adequação (TAACB)."
+  },
+  {
+    "topico": "Terminologia e Símbolos Gráficos",
+    "palavras_chave": [
+      "terminologia",
+      "definição",
+      "o que é",
+      "o que significa",
+      "conceito",
+      "glossário",
+      "símbolo",
+      "simbologia",
+      "legenda",
+      "desenho",
+      "planta"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 04_2021 CBMAL - Definições e Simbolos gráficos.md"
+    ],
+    "descricao": "Glossário oficial que padroniza os termos técnicos, definições e os símbolos gráficos a serem utilizados nos projetos de segurança contra incêndio."
+  },
+  {
+    "topico": "Segurança Urbanística e Acesso de Viaturas",
+    "palavras_chave": [
+      "urbanismo",
+      "urbanística",
+      "acesso de viatura",
+      "via pública",
+      "rua",
+      "manobra",
+      "retorno",
+      "passagem subterrânea",
+      "viaduto"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 05_2021 CBMAL - Urbanistica.md"
+    ],
+    "descricao": "Estabelece as condições recomendadas para vias urbanas, loteamentos e passagens, a fim de garantir o acesso, deslocamento e manobra das viaturas de emergência do Corpo de Bombeiros."
+  },
+  {
+    "topico": "Acesso de Viaturas na Edificação",
+    "palavras_chave": [
+      "acesso de viatura",
+      "entrada de viatura",
+      "via interna",
+      "arruamento",
+      "portão de acesso",
+      "largura da via",
+      "peso da viatura",
+      "manobra de viatura"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 06_2021 CBMAL - Acessos de viaturas.md"
+    ],
+    "descricao": "Estabelece os requisitos mínimos para as vias de acesso internas de uma edificação (largura, capacidade de carga, altura livre) para garantir a entrada e operação das viaturas do Corpo de Bombeiros."
+  }
+]
