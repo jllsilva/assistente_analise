@@ -226,5 +226,179 @@
       "knowledge_base_text/IT 09_2021 CBMAL - Compartimentação horizontal e vertical.md"
     ],
     "descricao": "Estabelece os critérios para compartimentação horizontal (divisão de pavimentos em células) e vertical (vedação de aberturas entre andares) para conter a propagação de incêndio."
+  },
+  {
+    "topico": "Controle de Materiais de Acabamento e Revestimento (CMAR)",
+    "palavras_chave": [
+      "cmar",
+      "acabamento",
+      "revestimento",
+      "material",
+      "propagação de chama",
+      "fumaça",
+      "piso",
+      "parede",
+      "teto",
+      "forro",
+      "classe de reação ao fogo",
+      "retardante de chama"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 10_2021 CBMAL - Controle de materiais de acabamento e de revestimento.md"
+    ],
+    "descricao": "Estabelece critérios para o controle de materiais de acabamento e revestimento (pisos, paredes, tetos) para restringir a propagação de chamas e o desenvolvimento de fumaça."
+  },
+  {
+    "topico": "Saídas de Emergência",
+    "palavras_chave": [
+      "saída de emergência",
+      "rota de fuga",
+      "evacuação",
+      "abandono",
+      "escada",
+      "escada de emergência",
+      "largura da saída",
+      "dimensionamento de saída",
+      "distância a percorrer",
+      "cálculo da população",
+      "unidade de passagem"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 11_2021 CBMAL  Saída de emergência.md"
+    ],
+    "descricao": "Define os critérios para o dimensionamento e construção das saídas de emergência, incluindo cálculo de população, largura das rotas, distâncias máximas e tipos de escadas."
+  },
+  {
+    "topico": "Centros Esportivos e de Exibição",
+    "palavras_chave": [
+      "centro esportivo",
+      "estádio",
+      "ginásio",
+      "arena",
+      "rodeio",
+      "arquibancada",
+      "lotação",
+      "público em pé",
+      "vomitórios",
+      "taxa de fluxo",
+      "tempo de saída",
+      "barreiras antiesmagamento"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 12_2021 CBMAL - Centros esportivos e de exibição.md"
+    ],
+    "descricao": "Estabelece os requisitos de segurança para locais de grande público como estádios e arenas, com foco no cálculo de lotação e dimensionamento de saídas (corredores, portões, vomitórios)."
+  },
+  {
+    "topico": "Pressurização de Escada de Segurança",
+    "palavras_chave": [
+      "pressurização",
+      "escada pressurizada",
+      "insuflar ar",
+      "pressão positiva",
+      "escada à prova de fumaça"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 13_2021 CBMAL - Pressurização de escada de segurança.md"
+    ],
+    "descricao": "Estabelece os requisitos para projetar e instalar sistemas de pressurização em escadas de segurança, garantindo que a rota de fuga permaneça livre de fumaça."
+  },
+  {
+    "topico": "Carga de Incêndio",
+    "palavras_chave": [
+      "carga de incêndio",
+      "calcular carga",
+      "risco de incêndio",
+      "potencial calorífico",
+      "método probabilístico",
+      "método determinístico"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 14_2021 CBMAL - Carga Incêndio nas edficações e áreas de risco.md"
+    ],
+    "descricao": "Estabelece os valores e métodos de cálculo da carga de incêndio, que quantifica o potencial de risco de uma edificação e serve de base para o dimensionamento de outras medidas de segurança."
+  },
+  {
+    "topico": "Controle de Fumaça (Regras Gerais)",
+    "palavras_chave": [
+      "controle de fumaça",
+      "fumaça",
+      "extração de fumaça",
+      "insuflamento de ar",
+      "átrio",
+      "mall",
+      "subsolo",
+      "edificação sem janelas"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça -(Parte 1)- Regras Gerais.md"
+    ],
+    "descricao": "Estabelece os parâmetros para sistemas de controle de fumaça em locais como átrios, shoppings e subsolos, visando manter as rotas de fuga seguras e auxiliar no combate ao incêndio."
+  },
+  {
+    "topico": "Controle de Fumaça (Componentes e Definições)",
+    "palavras_chave": [
+      "componentes de fumaça",
+      "dutos",
+      "grelhas",
+      "venezianas",
+      "ventiladores",
+      "barreiras de fumaça",
+      "acantonamento",
+      "zona livre de fumaça"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça (Parte 2) - conceitos, definições e componentes do sistema).md"
+    ],
+    "descricao": "Detalha a terminologia técnica e os componentes que formam um sistema de controle de fumaça, como dutos, grelhas, ventiladores e barreiras."
+  },
+  {
+    "topico": "Controle de Fumaça Natural (Indústrias e Depósitos)",
+    "palavras_chave": [
+      "fumaça natural",
+      "extração natural",
+      "exaustores naturais",
+      "entradas de ar",
+      "acantonamento de fumaça",
+      "indústria",
+      "depósito",
+      "armazenamento"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça (Parte 3) - Controle de fumaça natural em industrias, depósitos e áreas de armazenamento em comércios.md"
+    ],
+    "descricao": "Estabelece os critérios para o dimensionamento de sistemas de controle de fumaça por meios naturais em indústrias, depósitos e grandes áreas de armazenamento."
+  },
+  {
+    "topico": "Controle de Fumaça Natural (Demais Ocupações)",
+    "palavras_chave": [
+      "fumaça natural",
+      "átrios",
+      "shoppings",
+      "malls",
+      "rotas de fuga horizontais",
+      "claraboias",
+      "aberturas de entrada de ar"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça (Parte 4) - Controle de fumaça natural nas demais ocupações.md"
+    ],
+    "descricao": "Guia para projetar sistemas de ventilação natural para controle de fumaça em ocupações como shoppings, átrios e corredores, que não são indústrias ou depósitos."
+  },
+  {
+    "topico": "Controle de Fumaça Mecânico",
+    "palavras_chave": [
+      "controle de fumaça mecânico",
+      "exaustão mecânica",
+      "ventiladores",
+      "exaustores",
+      "insufladores",
+      "vazão de extração",
+      "ar de reposição"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça (Parte 5) - Controle de fumaça mecânico.md"
+    ],
+    "descricao": "Estabelece os requisitos para projetar sistemas de controle de fumaça por meios mecânicos (ventiladores), detalhando cálculo de vazão, ar de reposição e características dos equipamentos."
   }
 ]
