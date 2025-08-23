@@ -400,5 +400,132 @@
       "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça (Parte 5) - Controle de fumaça mecânico.md"
     ],
     "descricao": "Estabelece os requisitos para projetar sistemas de controle de fumaça por meios mecânicos (ventiladores), detalhando cálculo de vazão, ar de reposição e características dos equipamentos."
+  },
+  {
+    "topico": "Controle de Fumaça (Rotas de Fuga Horizontais e Subsolos)",
+    "palavras_chave": [
+      "rotas de fuga horizontais",
+      "controle de fumaça em subsolo",
+      "extração mecânica",
+      "insuflamento de ar",
+      "corredores protegidos"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça (Parte 6) - Controle de fumaça em rotas de fuga horizontais protegidas e subsolos).md"
+    ],
+    "descricao": "Fornece uma solução de engenharia para proteger corredores longos e pavimentos subterrâneos com sistemas de extração de fumaça e insuflamento de ar."
+  },
+  {
+    "topico": "Controle de Fumaça em Átrios",
+    "palavras_chave": [
+      "átrio",
+      "controle de fumaça em átrios",
+      "átrio coberto",
+      "átrio aberto",
+      "espaços adjacentes",
+      "vazão de extração",
+      "altura livre de fumaça"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça (Parte 7) - Átrios.md"
+    ],
+    "descricao": "Estabelece os requisitos para o dimensionamento de sistemas de controle de fumaça em átrios, visando a segurança dos pavimentos interligados."
+  },
+  {
+    "topico": "Controle de Fumaça (Aspectos de Segurança dos Componentes)",
+    "palavras_chave": [
+      "aspectos de segurança",
+      "confiabilidade",
+      "componentes de fumaça",
+      "acionadores",
+      "fonte de alimentação",
+      "manutenção de sistema de fumaça",
+      "resistência de ventiladores"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 15_2021 CBMAL - Controle de Fumaça (Parte 8) - Controle de fumaça – Aspectos de segurança.md"
+    ],
+    "descricao": "Detalha os requisitos de segurança, qualidade e funcionamento de cada componente de um sistema de controle de fumaça (ventiladores, dutos, acionadores, fontes de energia) e os procedimentos de manutenção."
+  },
+  {
+    "topico": "Gerenciamento de Risco de Incêndio",
+    "palavras_chave": [
+      "gerenciamento de risco",
+      "plano de gerenciamento",
+      "plano de emergência",
+      "avaliação de risco",
+      "controle de risco"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 16_2021 CBMAL - Gerenciamento de Risco.md"
+    ],
+    "descricao": "Estabelece os requisitos para a elaboração, implementação e revisão de um Plano de Gerenciamento de Risco de Incêndio, visando a identificação e controle dos riscos."
+  },
+  {
+    "topico": "Brigada de Incêndio",
+    "palavras_chave": [
+      "brigada de incêndio",
+      "brigadista",
+      "formação da brigada",
+      "treinamento",
+      "reciclagem",
+      "plano de emergência",
+      "primeiros socorros",
+      "combate a incêndio"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 17_2021 CBMAL - Brigada de incêndio.md"
+    ],
+    "descricao": "Estabelece as condições para a composição, formação, implantação e treinamento da brigada de incêndio, que atua na primeira resposta a emergências."
+  },
+  {
+    "topico": "Iluminação de Emergência",
+    "palavras_chave": [
+      "iluminação de emergência",
+      "aclaramento",
+      "balizamento",
+      "sinalização luminosa",
+      "bloco autônomo",
+      "sistema centralizado",
+      "iluminância",
+      "lux",
+      "autonomia"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 18_2021 CBMAL - Iluminação de emergência.md"
+    ],
+    "descricao": "Estabelece os requisitos para sistemas de iluminação de emergência (aclaramento e balizamento) para garantir a evacuação segura em caso de falha de energia."
+  },
+  {
+    "topico": "Sistema de Detecção e Alarme de Incêndio",
+    "palavras_chave": [
+      "detecção de incêndio",
+      "alarme de incêndio",
+      "detector de fumaça",
+      "detector de temperatura",
+      "acionador manual",
+      "sirene",
+      "avisador sonoro",
+      "central de alarme"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 19_2021 CBMAL - Sistema de alarme e detecção de incêndio.md"
+    ],
+    "descricao": "Estabelece os requisitos para o projeto e instalação de sistemas de detecção e alarme de incêndio, detalhando seus componentes, como detectores, acionadores e avisadores."
+  },
+  {
+    "topico": "Sinalização de Emergência",
+    "palavras_chave": [
+      "sinalização de emergência",
+      "placas de sinalização",
+      "placa de saída",
+      "sinalização de extintor",
+      "rota de fuga",
+      "fotoluminescente"
+    ],
+    "documentos_prioritarios": [
+      "knowledge_base_text/IT 20_2021 CBMAL - Sinalização de Emergência.md"
+    ],
+    "descricao": "Padroniza a sinalização de segurança (proibição, alerta, orientação e equipamentos) para garantir a correta comunicação visual em uma emergência."
   }
 ]
